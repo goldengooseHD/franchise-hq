@@ -226,6 +226,11 @@ db.exec(`
     exported_at TEXT DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS team_map (
+    franchise_id TEXT PRIMARY KEY,
+    team_abbr TEXT NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS schedules (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     week INTEGER,
@@ -274,11 +279,41 @@ const TEAM_MAP = {
   25:'BAL',26:'WAS',27:'SEA',28:'LAR',29:'PIT',30:'HOU',31:'TEN',32:'MIN'
 };
 
-function resolveTeam(raw) {
-  if (typeof raw === 'string' && raw.length <= 4) return raw;
-  if (typeof raw === 'number' && TEAM_MAP[raw]) return TEAM_MAP[raw];
-  if (typeof raw === 'string' && !isNaN(parseInt(raw)) && TEAM_MAP[parseInt(raw)]) return TEAM_MAP[parseInt(raw)];
-  return raw || 'UNK';
+// Nickname → abbreviation for franchise mode (teamId is a long unique ID, not 0-32)
+const TEAM_NAME_MAP = {
+  'ravens':'BAL','steelers':'PIT','bengals':'CIN','browns':'CLE',
+  'texans':'HOU','colts':'IND','jaguars':'JAX','titans':'TEN',
+  'bills':'BUF','dolphins':'MIA','patriots':'NE','jets':'NYJ',
+  'broncos':'DEN','chiefs':'KC','raiders':'LV','chargers':'LAC',
+  'cowboys':'DAL','giants':'NYG','eagles':'PHI','commanders':'WAS',
+  'bears':'CHI','lions':'DET','packers':'GB','vikings':'MIN',
+  'falcons':'ATL','panthers':'CAR','saints':'NO','buccaneers':'TB',
+  '49ers':'SF','rams':'LAR','seahawks':'SEA','cardinals':'ARI'
+};
+
+function resolveTeam(raw, nameHint) {
+  const s = String(raw || '').trim();
+  // Already a valid short abbr (2-4 non-numeric chars)
+  if (s.length >= 2 && s.length <= 4 && !/^\d/.test(s)) return s.toUpperCase();
+  // Static Madden ID map (0-32)
+  const n = parseInt(s);
+  if (!isNaN(n) && TEAM_MAP[n] && n <= 32) return TEAM_MAP[n];
+  // Dynamic franchise ID → abbr from team_map table
+  try {
+    const base = s.replace(/\.0$/, ''); // strip trailing .0
+    const row = db.prepare('SELECT team_abbr FROM team_map WHERE franchise_id=? OR franchise_id=?').get(s, base);
+    if (row) return row.team_abbr;
+  } catch(e) {}
+  // Fall back to team name lookup
+  if (nameHint) {
+    const key = String(nameHint).toLowerCase().replace(/[^a-z0-9]/g,'');
+    if (TEAM_NAME_MAP[key]) return TEAM_NAME_MAP[key];
+    // Try just the last word (e.g. "Baltimore Ravens" → "ravens")
+    const words = key.split(/\s+/);
+    const last = words[words.length - 1];
+    if (TEAM_NAME_MAP[last]) return TEAM_NAME_MAP[last];
+  }
+  return s || 'UNK';
 }
 
 // CATCH-ALL: Accept all POST requests and detect data type from body
@@ -292,13 +327,60 @@ app.post('*', (req, res) => {
     const keys = Object.keys(body);
     let processed = false;
 
-    // --- LEAGUE TEAM INFO (Standings) ---
+    // --- LEAGUE TEAM INFO (team metadata + build franchise ID map) ---
     if (body.leagueTeamInfoList && Array.isArray(body.leagueTeamInfoList)) {
       const list = body.leagueTeamInfoList;
+      const mapInsert = db.prepare(`INSERT OR REPLACE INTO team_map (franchise_id, team_abbr) VALUES (?, ?)`);
+      const upsert = db.prepare(`
+        INSERT INTO standings (team_abbr, team_name)
+        VALUES (?, ?)
+        ON CONFLICT(team_abbr) DO UPDATE SET
+          team_name=excluded.team_name, updated_at=datetime('now')
+      `);
+      const tx = db.transaction(() => {
+        for (const t of list) {
+          // Use abbrName directly — Companion App always sends this
+          const abbr = t.abbrName || resolveTeam(t.teamId || t.teamIndex, t.nickName || t.displayName);
+          const name = t.nickName || t.displayName || abbr;
+          // Store franchise_id → abbr mapping for all future data
+          const fid = String(t.teamId || t.teamIndex || '');
+          if (fid) {
+            mapInsert.run(fid, abbr);
+            mapInsert.run(fid.replace(/\.0$/, ''), abbr); // also store without .0
+          }
+          upsert.run(abbr, name);
+        }
+        // Remap all existing long IDs in every table to proper abbreviations
+        const allMaps = db.prepare('SELECT franchise_id, team_abbr FROM team_map').all();
+        const tables = ['standings','rosters','weekly_passing','weekly_rushing','weekly_receiving',
+          'weekly_defense','weekly_kicking','weekly_punting','team_stats','schedules'];
+        for (const m of allMaps) {
+          for (const tbl of tables) {
+            try {
+              db.prepare(`UPDATE ${tbl} SET team_abbr=? WHERE team_abbr=? OR team_abbr=?`)
+                .run(m.team_abbr, m.franchise_id, m.franchise_id.replace(/\.0$/, ''));
+              if (tbl === 'schedules') {
+                db.prepare(`UPDATE schedules SET home_team=? WHERE home_team=? OR home_team=?`)
+                  .run(m.team_abbr, m.franchise_id, m.franchise_id.replace(/\.0$/, ''));
+                db.prepare(`UPDATE schedules SET away_team=? WHERE away_team=? OR away_team=?`)
+                  .run(m.team_abbr, m.franchise_id, m.franchise_id.replace(/\.0$/, ''));
+              }
+            } catch(e) {}
+          }
+        }
+      });
+      tx();
+      logExport('leagueTeamInfo', list.length, keys);
+      processed = true;
+    }
+
+    // --- TEAM STANDINGS (wins/losses/pts — separate from leagueTeamInfoList) ---
+    if (body.teamStandingInfoList && Array.isArray(body.teamStandingInfoList)) {
+      const list = body.teamStandingInfoList;
       const upsert = db.prepare(`
         INSERT INTO standings (team_abbr, team_name, wins, losses, ties, pts_for, pts_against,
           div_wins, div_losses, div_ties, conf_wins, conf_losses, seed, prev_rank)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(team_abbr) DO UPDATE SET
           team_name=excluded.team_name, wins=excluded.wins, losses=excluded.losses, ties=excluded.ties,
           pts_for=excluded.pts_for, pts_against=excluded.pts_against,
@@ -308,17 +390,45 @@ app.post('*', (req, res) => {
       `);
       const tx = db.transaction(() => {
         for (const t of list) {
-          const abbr = resolveTeam(t.teamId || t.teamName || t.team);
-          upsert.run(abbr, t.displayName || t.teamName || abbr,
-            val(t,'totalWins') || val(t,'seasonWins'), val(t,'totalLosses') || val(t,'seasonLosses'),
-            val(t,'totalTies') || val(t,'seasonTies'),
-            val(t,'totalPtsFor') || val(t,'ptsFor'), val(t,'totalPtsAgainst') || val(t,'ptsAgainst'),
+          const abbr = t.abbrName || resolveTeam(t.teamId || t.teamIndex, t.nickName || t.displayName);
+          const name = t.nickName || t.displayName || abbr;
+          upsert.run(abbr, name,
+            val(t,'seasonWins') || val(t,'wins') || val(t,'totalWins'),
+            val(t,'seasonLosses') || val(t,'losses') || val(t,'totalLosses'),
+            val(t,'seasonTies') || val(t,'ties') || val(t,'totalTies'),
+            val(t,'totalPtsFor') || val(t,'ptsFor'),
+            val(t,'totalPtsAgainst') || val(t,'ptsAgainst'),
             val(t,'divWins'), val(t,'divLosses'), val(t,'divTies'),
-            val(t,'confWins'), val(t,'confLosses'), val(t,'seed'), val(t,'prevRank'));
+            val(t,'confWins'), val(t,'confLosses'),
+            val(t,'seed') || val(t,'playoffSeedNumber'),
+            val(t,'prevRank') || val(t,'rank'));
         }
       });
       tx();
-      logExport('leagueTeamInfo', list.length, keys);
+      logExport('teamStandingInfo', list.length, keys);
+      processed = true;
+    }
+
+    // --- GAME SCHEDULE / SCORES ---
+    if ((body.gameScheduleInfoList || body.scheduleInfoList) && Array.isArray(body.gameScheduleInfoList || body.scheduleInfoList)) {
+      const list = body.gameScheduleInfoList || body.scheduleInfoList;
+      const upsert = db.prepare(`
+        INSERT INTO schedules (week, home_team, away_team, home_score, away_score, is_complete)
+        VALUES (?,?,?,?,?,?)
+      `);
+      const clear = db.prepare('DELETE FROM schedules');
+      const tx = db.transaction(() => {
+        clear.run();
+        for (const g of list) {
+          const week = val(g,'weekIndex') || val(g,'week');
+          const home = resolveTeam(g.homeTeamId || g.homeTeam, g.homeNickname);
+          const away = resolveTeam(g.awayTeamId || g.awayTeam, g.awayNickname);
+          const done = g.isGameOver || g.isComplete || g.isGameComplete ? 1 : 0;
+          upsert.run(week, home, away, val(g,'homeScore'), val(g,'awayScore'), done);
+        }
+      });
+      tx();
+      logExport('gameScheduleInfo', list.length, keys);
       processed = true;
     }
 
@@ -689,6 +799,17 @@ app.get('/api/schedules', (req, res) => {
 // GET export log
 app.get('/api/exports', (req, res) => {
   res.json(db.prepare('SELECT * FROM export_log ORDER BY exported_at DESC LIMIT 50').all());
+});
+
+// GET raw unknown/debug data (last 5 unrecognized payloads)
+app.get('/api/raw', (req, res) => {
+  const rows = db.prepare('SELECT * FROM league_info ORDER BY imported_at DESC LIMIT 5').all();
+  res.json(rows.map(r => ({ ...r, data: JSON.parse(r.data) })));
+});
+
+// GET team ID map
+app.get('/api/teammap', (req, res) => {
+  res.json(db.prepare('SELECT * FROM team_map').all());
 });
 
 // GET league summary
