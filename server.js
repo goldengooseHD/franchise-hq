@@ -246,6 +246,14 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Normalize double slashes (happens when export URL has trailing slash)
+app.use((req, res, next) => {
+  if (req.url.includes('//')) {
+    req.url = req.url.replace(/\/+/g, '/');
+  }
+  next();
+});
+
 // ============================================================
 // MADDEN COMPANION APP EXPORT ROUTES
 // The companion app sends POST requests to your base URL.
