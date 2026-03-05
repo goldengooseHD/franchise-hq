@@ -9,7 +9,8 @@ const PORT = process.env.PORT || 3000;
 // ============================================================
 // DATABASE SETUP
 // ============================================================
-const db = new Database(path.join(__dirname, 'franchise.db'));
+const DB_PATH = require('fs').existsSync('/data') ? '/data/franchise.db' : path.join(__dirname, 'franchise.db');
+const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
