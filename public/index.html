@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FRANCHISE HQ — The Showers</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Barlow:wght@400;500;600;700&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#050a14;--bg2:#0b1221;--bg3:#0f1a2e;--bg4:#142240;
+  --gold:#ffa300;--gold2:#ffcc02;--blue:#003594;--blue2:#0050c8;
+  --tx:#d4dce8;--txd:#5a6e8a;--txb:#f0f4f8;
+  --bdr:rgba(255,167,38,.08);--bdr2:rgba(255,167,38,.25);
+  --grn:#34d399;--red:#f87171;--yel:#fbbf24;--blu:#60a5fa;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:'Barlow',sans-serif;min-height:100vh}
+.atmo{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 50% at 20% 10%,rgba(0,53,148,.12) 0%,transparent 60%),
+  radial-gradient(ellipse 60% 40% at 80% 90%,rgba(255,163,0,.06) 0%,transparent 50%)}
+.hash{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.015;
+  background-image:repeating-linear-gradient(0deg,transparent 0,transparent 94px,rgba(74,222,128,.6) 94px,rgba(74,222,128,.6) 96px,transparent 96px)}
+
+/* Header */
+header{position:relative;z-index:10;background:linear-gradient(180deg,rgba(0,53,148,.2),rgba(11,18,33,.98));
+  border-bottom:2px solid var(--gold);display:flex;align-items:center;justify-content:space-between;
+  padding:16px 28px;flex-wrap:wrap;gap:12px}
+.brand{display:flex;align-items:center;gap:16px}
+.logo{width:44px;height:44px;background:linear-gradient(135deg,var(--blue),var(--blue2));border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-family:'Chakra Petch';font-weight:900;
+  font-size:20px;color:var(--gold);border:1px solid rgba(255,163,0,.3);box-shadow:0 4px 20px rgba(0,53,148,.4)}
+.brand h1{font-family:'Barlow Condensed';font-weight:900;font-size:26px;letter-spacing:5px;
+  text-transform:uppercase;background:linear-gradient(135deg,#fff,#c0cfe0);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.brand small{font-family:'Chakra Petch';font-size:10px;letter-spacing:3px;color:var(--gold);text-transform:uppercase}
+.meta{display:flex;gap:20px;align-items:center}
+.mb{text-align:center}
+.mb .v{font-family:'Barlow Condensed';font-weight:800;font-size:20px;color:var(--txb)}
+.mb .l{font-size:9px;letter-spacing:2px;color:var(--txd);text-transform:uppercase;margin-top:1px}
+.md{width:1px;height:28px;background:linear-gradient(180deg,transparent,rgba(255,255,255,.08),transparent)}
+
+/* Live indicator */
+.live{display:flex;align-items:center;gap:6px;font-family:'Chakra Petch';font-size:10px;
+  letter-spacing:2px;color:var(--grn);text-transform:uppercase}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--grn);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Nav */
+nav{position:relative;z-index:10;background:rgba(11,18,33,.95);border-bottom:1px solid var(--bdr);
+  display:flex;overflow-x:auto;backdrop-filter:blur(20px)}
+nav button{background:none;border:none;cursor:pointer;padding:13px 26px;
+  font-family:'Barlow Condensed';font-weight:700;font-size:13px;letter-spacing:2.5px;
+  text-transform:uppercase;color:var(--txd);position:relative;transition:color .3s;white-space:nowrap}
+nav button:hover{color:var(--tx)}
+nav button.on{color:var(--gold)}
+nav button.on::after{content:'';position:absolute;bottom:0;left:20%;right:20%;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+
+/* Content */
+main{position:relative;z-index:5;max-width:1400px;margin:0 auto;padding:24px}
+.tab{display:none}.tab.show{display:block}
+
+/* Cards */
+.card{background:var(--bg3);border:1px solid var(--bdr);border-radius:6px;overflow:hidden;margin-bottom:18px;
+  animation:fu .5s ease both}
+.ch{padding:13px 20px;background:linear-gradient(135deg,rgba(0,53,148,.1),rgba(255,163,0,.03));
+  border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.ch h3{font-family:'Barlow Condensed';font-weight:800;font-size:14px;letter-spacing:2.5px;text-transform:uppercase;color:var(--txb)}
+.badge{font-family:'Chakra Petch';font-size:10px;letter-spacing:1.5px;font-weight:600;
+  padding:3px 10px;border-radius:3px;background:rgba(255,163,0,.1);color:var(--gold);border:1px solid rgba(255,163,0,.15)}
+
+/* Tables */
+table{width:100%;border-collapse:collapse}
+th{padding:9px 14px;text-align:left;font-family:'Barlow Condensed';font-weight:700;font-size:10px;
+  letter-spacing:2px;text-transform:uppercase;color:var(--txd);border-bottom:1px solid rgba(255,255,255,.05);white-space:nowrap}
+td{padding:10px 14px;font-size:13px;font-weight:500;border-bottom:1px solid rgba(255,255,255,.025);white-space:nowrap}
+tr:hover td{background:rgba(255,255,255,.015)}
+.tc{text-align:center}.tr{text-align:right}
+
+/* Team cell */
+.tm{display:inline-flex;align-items:center;gap:8px}
+.dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.ta{font-family:'Barlow Condensed';font-weight:800;font-size:14px;letter-spacing:1px;color:var(--txb)}
+.tn{font-size:11px;color:var(--txd)}
+
+/* OVR */
+.ovr{font-family:'Chakra Petch';font-weight:700;font-size:15px}
+.oe{color:var(--yel)}.og{color:var(--grn)}.oa{color:var(--txd)}.ol{color:var(--red)}
+
+/* Win pct */
+.ph{color:var(--grn);font-weight:700}.pw{color:var(--yel);font-weight:700}.pc{color:var(--red);font-weight:700}
+.dp{color:var(--grn);font-weight:600}.dn{color:var(--red);font-weight:600}.dz{color:var(--txd)}
+.rec{font-family:'Barlow Condensed';font-weight:700;font-size:15px}
+
+/* Dev traits */
+.dx{color:#ff6b6b;font-weight:700}.ds{color:#fbbf24;font-weight:700}.dt{color:#60a5fa;font-weight:700}.dn2{color:var(--txd)}
+
+/* Position tag */
+.pt{font-family:'Chakra Petch';font-size:10px;font-weight:700;letter-spacing:1px;
+  padding:2px 7px;border-radius:3px;background:rgba(255,163,0,.08);color:var(--gold)}
+
+/* Conference label */
+.conf{font-family:'Barlow Condensed';font-weight:800;font-size:11px;letter-spacing:3px;color:var(--blue2);
+  text-transform:uppercase;padding:6px 14px;background:rgba(0,53,148,.08);border-left:3px solid var(--blue);margin-bottom:4px}
+
+/* Scoreboard */
+.sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px;padding:16px}
+.gc{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--bdr);
+  border-radius:6px;padding:14px 18px;position:relative;overflow:hidden;transition:border-color .3s,transform .2s}
+.gc:hover{border-color:var(--bdr2);transform:translateY(-2px)}
+.gc .wl{font-family:'Chakra Petch';font-size:9px;letter-spacing:2px;color:var(--txd);text-transform:uppercase;margin-bottom:10px}
+.gc .mu{display:flex;align-items:center;justify-content:space-between}
+.gc .ts{display:flex;align-items:center;gap:8px}
+.gc .ab{font-family:'Barlow Condensed';font-weight:900;font-size:18px;letter-spacing:1px}
+.gc .sc{display:flex;align-items:center;gap:8px;padding:0 14px}
+.gc .sv{font-family:'Chakra Petch';font-weight:700;font-size:26px;min-width:32px;text-align:center}
+.gc .sw{color:var(--gold)}.gc .sl{color:var(--txd)}
+.gc .sd{color:var(--txd);font-size:16px;opacity:.4}
+.gc .ft{font-family:'Chakra Petch';font-size:9px;letter-spacing:2px;color:var(--grn);text-transform:uppercase;text-align:center;margin-top:8px;opacity:.7}
+.gc .wb{position:absolute;bottom:0;left:0;right:0;height:2px}
+
+/* Filter bar */
+.fb{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+select,input[type=text]{padding:9px 12px;background:var(--bg3);border:1px solid rgba(255,255,255,.08);
+  border-radius:4px;color:var(--tx);font-family:'Barlow';font-size:13px;outline:none}
+select:focus,input:focus{border-color:var(--bdr2)}
+select option{background:var(--bg3)}
+.fb select{min-width:140px}
+.fb .ct{font-size:12px;color:var(--txd);margin-left:auto}
+
+/* Stat leader card */
+.ldr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px}
+
+/* Empty */
+.empty{padding:44px 24px;text-align:center}
+.empty h4{font-family:'Barlow Condensed';font-size:17px;font-weight:700;letter-spacing:2px;color:var(--txd);margin-bottom:4px}
+.empty p{font-size:12px;color:var(--txd);opacity:.6}
+
+/* Export Log */
+.elog td{font-family:'Chakra Petch';font-size:12px}
+.etype{padding:2px 8px;border-radius:3px;background:rgba(255,163,0,.08);color:var(--gold);font-weight:600;font-size:11px}
+
+/* Notif */
+.notif{position:fixed;top:16px;right:16px;z-index:1000;padding:12px 24px;border-radius:6px;
+  font-family:'Barlow Condensed';font-weight:700;font-size:13px;letter-spacing:1px;
+  box-shadow:0 8px 40px rgba(0,0,0,.5);animation:si .4s cubic-bezier(.16,1,.3,1);display:none}
+.notif.ok{background:var(--grn);color:#000}.notif.err{background:var(--red);color:#fff}
+
+/* Section bar */
+.sb{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px}
+.sb h2{font-family:'Barlow Condensed';font-weight:900;font-size:22px;letter-spacing:3px;text-transform:uppercase;color:var(--txb)}
+
+/* Animations */
+@keyframes fu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes si{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:translateX(0)}}
+
+/* Setup info box */
+.info-box{padding:22px;font-size:13px;line-height:1.8;color:var(--txd)}
+.info-box h4{color:var(--gold);font-family:'Barlow Condensed';font-weight:800;font-size:13px;letter-spacing:2px;
+  text-transform:uppercase;margin:16px 0 6px}
+.info-box h4:first-child{margin-top:0}
+.info-box ol{padding-left:18px;margin:4px 0}
+.info-box .hl{color:var(--gold);font-weight:600}
+.info-box code{background:rgba(255,255,255,.06);padding:2px 8px;border-radius:3px;font-size:12px;color:var(--txb)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:rgba(255,163,0,.2);border-radius:3px}
+
+@media(max-width:768px){
+  header{padding:12px 16px}.brand h1{font-size:20px;letter-spacing:3px}
+  .meta{gap:12px}.mb .v{font-size:16px}
+  nav button{padding:10px 16px;font-size:11px}
+  main{padding:14px}.sg{grid-template-columns:1fr}
+  td,th{padding:7px 8px;font-size:12px}
+  .ldr-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="atmo"></div>
+<div class="hash"></div>
+<div id="notif" class="notif"></div>
+
+<header>
+  <div class="brand">
+    <div class="logo">FH</div>
+    <div>
+      <h1>THE SHOWERS</h1>
+      <small>Franchise Command Center</small>
+    </div>
+  </div>
+  <div class="meta">
+    <div class="live"><div class="live-dot"></div>LIVE</div>
+    <div class="md"></div>
+    <div class="mb"><div class="v" id="mPlayers">—</div><div class="l">Players</div></div>
+    <div class="md"></div>
+    <div class="mb"><div class="v" id="mExports">—</div><div class="l">Exports</div></div>
+    <div class="md"></div>
+    <div class="mb"><div class="v" id="mLast">—</div><div class="l">Last Sync</div></div>
+  </div>
+</header>
+
+<nav id="nav">
+  <button class="on" onclick="go('standings',this)">Standings</button>
+  <button onclick="go('scores',this)">Scores</button>
+  <button onclick="go('roster',this)">Roster</button>
+  <button onclick="go('passing',this)">Passing</button>
+  <button onclick="go('rushing',this)">Rushing</button>
+  <button onclick="go('receiving',this)">Receiving</button>
+  <button onclick="go('defense',this)">Defense</button>
+  <button onclick="go('setup',this)">Setup</button>
+</nav>
+
+<main>
+  <div id="t-standings" class="tab show"></div>
+  <div id="t-scores" class="tab"></div>
+  <div id="t-roster" class="tab"></div>
+  <div id="t-passing" class="tab"></div>
+  <div id="t-rushing" class="tab"></div>
+  <div id="t-receiving" class="tab"></div>
+  <div id="t-defense" class="tab"></div>
+  <div id="t-setup" class="tab"></div>
+</main>
+
+<script>
+// === DATA ===
+const TI={ARI:{n:"Cardinals",c:"Arizona",cl:"#97233F"},ATL:{n:"Falcons",c:"Atlanta",cl:"#A71930"},
+BAL:{n:"Ravens",c:"Baltimore",cl:"#241773"},BUF:{n:"Bills",c:"Buffalo",cl:"#00338D"},
+CAR:{n:"Panthers",c:"Carolina",cl:"#0085CA"},CHI:{n:"Bears",c:"Chicago",cl:"#0B162A"},
+CIN:{n:"Bengals",c:"Cincinnati",cl:"#FB4F14"},CLE:{n:"Browns",c:"Cleveland",cl:"#311D00"},
+DAL:{n:"Cowboys",c:"Dallas",cl:"#003594"},DEN:{n:"Broncos",c:"Denver",cl:"#FB4F14"},
+DET:{n:"Lions",c:"Detroit",cl:"#0076B6"},GB:{n:"Packers",c:"Green Bay",cl:"#203731"},
+HOU:{n:"Texans",c:"Houston",cl:"#03202F"},IND:{n:"Colts",c:"Indianapolis",cl:"#002C5F"},
+JAX:{n:"Jaguars",c:"Jacksonville",cl:"#006778"},KC:{n:"Chiefs",c:"Kansas City",cl:"#E31837"},
+LV:{n:"Raiders",c:"Las Vegas",cl:"#000000"},LAC:{n:"Chargers",c:"Los Angeles",cl:"#0080C6"},
+LAR:{n:"Rams",c:"Los Angeles",cl:"#003594"},MIA:{n:"Dolphins",c:"Miami",cl:"#008E97"},
+MIN:{n:"Vikings",c:"Minnesota",cl:"#4F2683"},NE:{n:"Patriots",c:"New England",cl:"#002244"},
+NO:{n:"Saints",c:"New Orleans",cl:"#D3BC8D"},NYG:{n:"Giants",c:"New York",cl:"#0B2265"},
+NYJ:{n:"Jets",c:"New York",cl:"#125740"},PHI:{n:"Eagles",c:"Philadelphia",cl:"#004C54"},
+PIT:{n:"Steelers",c:"Pittsburgh",cl:"#FFB612"},SF:{n:"49ers",c:"San Francisco",cl:"#AA0000"},
+SEA:{n:"Seahawks",c:"Seattle",cl:"#002244"},TB:{n:"Buccaneers",c:"Tampa Bay",cl:"#D50A0A"},
+TEN:{n:"Titans",c:"Tennessee",cl:"#0C2340"},WAS:{n:"Commanders",c:"Washington",cl:"#5A1414"},
+FA:{n:"Free Agent",c:"",cl:"#444"}};
+
+const DIVS={"AFC East":["BUF","MIA","NE","NYJ"],"AFC North":["BAL","CIN","CLE","PIT"],
+"AFC South":["HOU","IND","JAX","TEN"],"AFC West":["DEN","KC","LAC","LV"],
+"NFC East":["DAL","NYG","PHI","WAS"],"NFC North":["CHI","DET","GB","MIN"],
+"NFC South":["ATL","CAR","NO","TB"],"NFC West":["ARI","LAR","SEA","SF"]};
+
+const DV={0:"Normal",1:"Star",2:"Superstar",3:"X-Factor"};
+const DC={0:"dn2",1:"dt",2:"ds",3:"dx"};
+
+function ti(a){return TI[a]||{n:a,c:"",cl:"#444"}}
+function tc(a){const t=ti(a);return`<div class="tm"><div class="dot" style="background:${t.cl}"></div><span class="ta">${a}</span><span class="tn">${t.c} ${t.n}</span></div>`}
+function ovc(v){return v>=90?'oe':v>=80?'og':v>=70?'oa':'ol'}
+function pctc(p){return p>=.6?'ph':p>=.4?'pw':'pc'}
+
+let curTab='standings';
+function go(tab,btn){
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('show'));
+  document.getElementById('t-'+tab).classList.add('show');
+  curTab=tab;
+  load(tab);
+}
+
+// === API ===
+async function api(url){
+  try{const r=await fetch(url);return await r.json();}catch(e){console.error(e);return[];}
+}
+
+async function loadSummary(){
+  const s=await api('/api/summary');
+  document.getElementById('mPlayers').textContent=s.totalPlayers||'—';
+  document.getElementById('mExports').textContent=s.totalExports||'—';
+  if(s.lastExport){
+    const d=new Date(s.lastExport+'Z');
+    const ago=Math.round((Date.now()-d.getTime())/60000);
+    document.getElementById('mLast').textContent=ago<60?ago+'m ago':Math.round(ago/60)+'h ago';
+  }
+}
+
+async function load(tab){
+  if(tab==='standings')await loadStandings();
+  else if(tab==='scores')await loadScores();
+  else if(tab==='roster')await loadRoster();
+  else if(tab==='passing')await loadWeekly('passing');
+  else if(tab==='rushing')await loadWeekly('rushing');
+  else if(tab==='receiving')await loadWeekly('receiving');
+  else if(tab==='defense')await loadWeekly('defense');
+  else if(tab==='setup')loadSetup();
+}
+
+// === STANDINGS ===
+async function loadStandings(){
+  const rows=await api('/api/standings');
+  const el=document.getElementById('t-standings');
+  if(!rows.length){el.innerHTML=`<div class="card"><div class="empty"><h4>No Standings Data</h4><p>Export league info from the Madden Companion App to see standings</p></div></div>`;return;}
+
+  const byTeam={};rows.forEach(r=>byTeam[r.team_abbr]=r);
+  const confs=[{n:"AFC",ds:["AFC East","AFC North","AFC South","AFC West"]},{n:"NFC",ds:["NFC East","NFC North","NFC South","NFC West"]}];
+  let h='';
+  confs.forEach(conf=>{
+    h+=`<div class="conf">${conf.n}</div>`;
+    conf.ds.forEach(div=>{
+      const teams=DIVS[div].map(a=>({a,...(byTeam[a]||{wins:0,losses:0,ties:0,pts_for:0,pts_against:0})}))
+        .sort((a,b)=>{const ap=(a.wins+a.losses+a.ties)>0?a.wins/(a.wins+a.losses+a.ties):0;
+          const bp=(b.wins+b.losses+b.ties)>0?b.wins/(b.wins+b.losses+b.ties):0;return bp-ap||(b.pts_for||0)-(a.pts_for||0);});
+      h+=`<div class="card"><div class="ch"><h3>${div}</h3></div><div style="overflow-x:auto"><table>
+        <thead><tr><th>Team</th><th class="tc">W</th><th class="tc">L</th><th class="tc">T</th>
+        <th class="tc">PCT</th><th class="tc">PF</th><th class="tc">PA</th><th class="tc">DIFF</th></tr></thead><tbody>`;
+      teams.forEach((tm,i)=>{
+        const t=ti(tm.a);const tot=tm.wins+tm.losses+tm.ties;
+        const pct=tot>0?tm.wins/tot:0;const diff=(tm.pts_for||0)-(tm.pts_against||0);
+        const ldr=i===0&&tot>0?'background:rgba(255,163,0,.03)':'';
+        h+=`<tr style="${ldr}"><td>${tc(tm.a)}</td>
+          <td class="tc rec">${tm.wins}</td><td class="tc rec" style="color:var(--txd)">${tm.losses}</td>
+          <td class="tc" style="color:var(--txd)">${tm.ties}</td>
+          <td class="tc ${pctc(pct)}">${pct.toFixed(3)}</td>
+          <td class="tc">${tm.pts_for||0}</td><td class="tc">${tm.pts_against||0}</td>
+          <td class="tc ${diff>0?'dp':diff<0?'dn':'dz'}">${diff>0?'+':''}${diff}</td></tr>`;
+      });
+      h+=`</tbody></table></div></div>`;
+    });
+  });
+  el.innerHTML=h;
+}
+
+// === SCORES ===
+async function loadScores(){
+  const rows=await api('/api/schedules');
+  const el=document.getElementById('t-scores');
+  const complete=rows.filter(r=>r.is_complete);
+  if(!complete.length){el.innerHTML=`<div class="card"><div class="empty"><h4>No Games Yet</h4><p>Export schedule data from the Companion App to see scores</p></div></div>`;return;}
+
+  const byWeek={};complete.forEach(g=>{if(!byWeek[g.week])byWeek[g.week]=[];byWeek[g.week].push(g);});
+  const weeks=Object.keys(byWeek).sort((a,b)=>b-a);
+  let h=`<div class="sb"><h2>Scoreboard</h2></div>`;
+  weeks.forEach(wk=>{
+    h+=`<div class="card"><div class="ch"><h3>Week ${wk}</h3><span class="badge">${byWeek[wk].length} Games</span></div><div class="sg">`;
+    byWeek[wk].forEach(g=>{
+      const ht=ti(g.home_team),at=ti(g.away_team);
+      const hw=g.home_score>g.away_score,aw=g.away_score>g.home_score;
+      const bar=hw?ht.cl:at.cl;
+      h+=`<div class="gc"><div class="wl">Week ${g.week} &middot; Final</div>
+        <div class="mu">
+          <div class="ts" style="opacity:${aw?1:.45}"><div class="dot" style="background:${at.cl}"></div><span class="ab">${g.away_team}</span></div>
+          <div class="sc"><span class="sv ${aw?'sw':'sl'}">${g.away_score}</span><span class="sd">—</span><span class="sv ${hw?'sw':'sl'}">${g.home_score}</span></div>
+          <div class="ts" style="opacity:${hw?1:.45};justify-content:flex-end"><span class="ab">${g.home_team}</span><div class="dot" style="background:${ht.cl}"></div></div>
+        </div>
+        <div class="ft">FINAL</div>
+        <div class="wb" style="background:linear-gradient(90deg,transparent,${bar},transparent)"></div>
+      </div>`;
+    });
+    h+=`</div></div>`;
+  });
+  el.innerHTML=h;
+}
+
+// === ROSTER ===
+let rTeam='ALL',rPos='ALL',rSort='overall';
+async function loadRoster(){
+  const params=new URLSearchParams({team:rTeam,position:rPos,sort:rSort,limit:'200'});
+  const rows=await api('/api/rosters?'+params);
+  const el=document.getElementById('t-roster');
+  const positions=[...new Set(rows.map(r=>r.position))].filter(Boolean).sort();
+
+  let h=`<div class="fb">
+    <select onchange="rTeam=this.value;loadRoster()"><option value="ALL">All Teams</option>
+    ${Object.keys(TI).sort().map(a=>`<option value="${a}" ${rTeam===a?'selected':''}>${ti(a).c} ${ti(a).n}</option>`).join('')}</select>
+    <select onchange="rPos=this.value;loadRoster()"><option value="ALL">All Positions</option>
+    ${positions.map(p=>`<option value="${p}" ${rPos===p?'selected':''}>${p}</option>`).join('')}</select>
+    <select onchange="rSort=this.value;loadRoster()">
+    <option value="overall" ${rSort==='overall'?'selected':''}>Sort: OVR</option>
+    <option value="age" ${rSort==='age'?'selected':''}>Sort: Age</option>
+    <option value="speed_rating" ${rSort==='speed_rating'?'selected':''}>Sort: Speed</option>
+    <option value="awareness_rating" ${rSort==='awareness_rating'?'selected':''}>Sort: AWR</option>
+    </select>
+    <span class="ct">${rows.length} players</span></div>`;
+
+  if(!rows.length){h+=`<div class="card"><div class="empty"><h4>No Roster Data</h4><p>Export rosters from the Companion App</p></div></div>`;el.innerHTML=h;return;}
+
+  h+=`<div class="card"><div style="overflow-x:auto"><table>
+    <thead><tr><th>Player</th><th>Pos</th><th>Team</th><th class="tc">OVR</th><th class="tc">Age</th>
+    <th class="tc">SPD</th><th class="tc">AWR</th><th>Dev</th><th class="tc">Yrs</th></tr></thead><tbody>`;
+  rows.forEach(p=>{
+    h+=`<tr><td style="font-weight:600">${p.first_name} ${p.last_name}${p.jersey_num?` <span style="color:var(--txd);font-size:11px">#${p.jersey_num}</span>`:''}</td>
+      <td><span class="pt">${p.position}</span></td>
+      <td>${tc(p.team_abbr)}</td>
+      <td class="tc"><span class="ovr ${ovc(p.overall)}">${p.overall}</span></td>
+      <td class="tc">${p.age||'-'}</td>
+      <td class="tc">${p.speed_rating||'-'}</td>
+      <td class="tc">${p.awareness_rating||'-'}</td>
+      <td><span class="${DC[p.dev_trait]||'dn2'}">${DV[p.dev_trait]||'Normal'}</span></td>
+      <td class="tc">${p.years_pro||'R'}</td></tr>`;
+  });
+  h+=`</tbody></table></div></div>`;
+  el.innerHTML=h;
+}
+
+// === WEEKLY STATS ===
+async function loadWeekly(type){
+  const rows=await api(`/api/stats/${type}?limit=100`);
+  const el=document.getElementById('t-'+type);
+  if(!rows.length){el.innerHTML=`<div class="card"><div class="empty"><h4>No ${type.charAt(0).toUpperCase()+type.slice(1)} Stats</h4><p>Export weekly stats from the Companion App</p></div></div>`;return;}
+
+  const cols={
+    passing:{h:['Player','Team','Wk','Att','Cmp','Yds','TD','INT','Rtg'],
+      f:r=>`<td style="font-weight:600">${r.full_name||r.roster_id}</td><td>${tc(r.team_abbr)}</td>
+        <td class="tc">${r.week}</td><td class="tc">${r.pass_att}</td><td class="tc">${r.pass_comp}</td>
+        <td class="tc" style="font-weight:700">${r.pass_yds}</td><td class="tc" style="color:var(--grn)">${r.pass_tds}</td>
+        <td class="tc" style="color:var(--red)">${r.pass_ints}</td><td class="tc">${(r.passer_rating||0).toFixed(1)}</td>`},
+    rushing:{h:['Player','Team','Wk','Att','Yds','TD','Fum','Lng'],
+      f:r=>`<td style="font-weight:600">${r.full_name||r.roster_id}</td><td>${tc(r.team_abbr)}</td>
+        <td class="tc">${r.week}</td><td class="tc">${r.rush_att}</td>
+        <td class="tc" style="font-weight:700">${r.rush_yds}</td><td class="tc" style="color:var(--grn)">${r.rush_tds}</td>
+        <td class="tc" style="color:var(--red)">${r.rush_fumbles}</td><td class="tc">${r.rush_longest}</td>`},
+    receiving:{h:['Player','Team','Wk','Rec','Yds','TD','Drops','Lng'],
+      f:r=>`<td style="font-weight:600">${r.full_name||r.roster_id}</td><td>${tc(r.team_abbr)}</td>
+        <td class="tc">${r.week}</td><td class="tc">${r.rec_catches}</td>
+        <td class="tc" style="font-weight:700">${r.rec_yds}</td><td class="tc" style="color:var(--grn)">${r.rec_tds}</td>
+        <td class="tc" style="color:var(--red)">${r.rec_drops}</td><td class="tc">${r.rec_longest}</td>`},
+    defense:{h:['Player','Team','Wk','Tkl','Sack','INT','FF','FR','PD'],
+      f:r=>`<td style="font-weight:600">${r.full_name||r.roster_id}</td><td>${tc(r.team_abbr)}</td>
+        <td class="tc">${r.week}</td><td class="tc" style="font-weight:700">${r.def_tackles}</td>
+        <td class="tc">${r.def_sacks}</td><td class="tc" style="color:var(--grn)">${r.def_ints}</td>
+        <td class="tc">${r.def_forced_fumbles}</td><td class="tc">${r.def_fumble_rec}</td>
+        <td class="tc">${r.def_passes_deflected}</td>`},
+  };
+  const c=cols[type];if(!c)return;
+
+  let h=`<div class="sb"><h2>${type.charAt(0).toUpperCase()+type.slice(1)} Leaders</h2></div>`;
+  h+=`<div class="card"><div style="overflow-x:auto"><table>
+    <thead><tr>${c.h.map(x=>`<th${x!=='Player'&&x!=='Team'?' class="tc"':''}>${x}</th>`).join('')}</tr></thead><tbody>`;
+  rows.forEach(r=>{h+=`<tr>${c.f(r)}</tr>`;});
+  h+=`</tbody></table></div></div>`;
+  el.innerHTML=h;
+}
+
+// === SETUP ===
+function loadSetup(){
+  const el=document.getElementById('t-setup');
+  const host=window.location.origin;
+  el.innerHTML=`
+    <div class="sb"><h2>Setup Guide</h2></div>
+    <div class="card">
+      <div class="ch"><h3>Your Export URL</h3></div>
+      <div style="padding:18px">
+        <div style="background:var(--bg);border:1px solid var(--bdr2);border-radius:6px;padding:14px 18px;
+          font-family:'Chakra Petch';font-size:15px;color:var(--gold);letter-spacing:1px;word-break:break-all;
+          cursor:pointer" onclick="navigator.clipboard.writeText('${host}');notify('Copied!','ok')" title="Click to copy">
+          ${host}
+        </div>
+        <div style="font-size:11px;color:var(--txd);margin-top:8px">Click to copy — paste this into the Madden Companion App export field</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>How to Export</h3></div>
+      <div class="info-box">
+        <h4>Step 1 — Open the Companion App</h4>
+        <ol>
+          <li>Download the <span class="hl">Madden NFL 26 Companion App</span> on your phone</li>
+          <li>Log in with your EA account</li>
+          <li>Go to <span class="hl">Franchises</span> and select your league</li>
+        </ol>
+        <h4>Step 2 — Export Data</h4>
+        <ol>
+          <li>Tap <span class="hl">Export</span> on the bottom right</li>
+          <li>Paste your URL: <code>${host}</code></li>
+          <li>Check the boxes for what you want to export (League Info, Rosters, Weekly Stats)</li>
+          <li>Select the week and tap <span class="hl">EXPORT</span></li>
+        </ol>
+        <h4>Step 3 — View Your Dashboard</h4>
+        <ol>
+          <li>Come back to this page — your data will appear automatically</li>
+          <li>The dashboard auto-refreshes every 30 seconds</li>
+          <li>Share this URL with your league mates so they can view it too</li>
+        </ol>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>Export Log</h3></div>
+      <div id="exportLog" style="padding:16px"><div class="empty"><p>Loading...</p></div></div>
+    </div>
+    <div class="card" style="border-color:rgba(248,113,113,.15)">
+      <div class="ch" style="background:rgba(248,113,113,.04)"><h3 style="color:var(--red)">Danger Zone</h3></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px;flex-wrap:wrap;gap:12px">
+        <span style="font-size:13px;color:var(--txd)">Delete all imported data and start fresh</span>
+        <button style="padding:8px 20px;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.08);
+          color:var(--red);border-radius:4px;cursor:pointer;font-family:'Barlow Condensed';font-weight:700;
+          font-size:12px;letter-spacing:2px;text-transform:uppercase" onclick="resetAll()">Reset All Data</button>
+      </div>
+    </div>`;
+  loadExportLog();
+}
+
+async function loadExportLog(){
+  const rows=await api('/api/exports');
+  const el=document.getElementById('exportLog');
+  if(!el)return;
+  if(!rows.length){el.innerHTML=`<div class="empty"><h4>No Exports Yet</h4><p>Waiting for data from the Companion App...</p></div>`;return;}
+  let h=`<table class="elog"><thead><tr><th>Type</th><th class="tc">Records</th><th>Time</th></tr></thead><tbody>`;
+  rows.forEach(r=>{
+    const d=new Date(r.exported_at+'Z');
+    h+=`<tr><td><span class="etype">${r.export_type}</span></td><td class="tc">${r.record_count}</td>
+      <td>${d.toLocaleString()}</td></tr>`;
+  });
+  h+=`</tbody></table>`;
+  el.innerHTML=h;
+}
+
+async function resetAll(){
+  if(!confirm('Delete ALL league data? This cannot be undone.'))return;
+  await fetch('/api/reset',{method:'DELETE'});
+  notify('All data cleared','ok');
+  load(curTab);loadSummary();
+}
+
+function notify(msg,type){
+  const el=document.getElementById('notif');
+  el.className=`notif ${type}`;el.textContent=msg;el.style.display='block';
+  setTimeout(()=>el.style.display='none',3000);
+}
+
+// === INIT ===
+loadSummary();
+load('standings');
+
+// Auto-refresh every 30s
+setInterval(()=>{loadSummary();load(curTab);},30000);
+</script>
+</body>
+</html>
