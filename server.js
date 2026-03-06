@@ -14,33 +14,33 @@ const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
-// Drop stale tables that are missing critical columns (they'll be recreated below)
-// This handles the case where old DB has tables created before schema was finalized
-(function dropStaleTables() {
-  const checks = [
-    ['rosters', 'overall'],
-    ['rosters', 'dev_trait'],
-    ['standings', 'wins'],
-    ['export_log', 'export_type'],
-    ['export_log', 'raw_keys'],
-    ['export_log', 'exported_at'],
-    ['league_info', 'export_type'],
-    ['weekly_passing', 'passer_rating'],
-    ['weekly_rushing', 'rush_yds'],
-    ['weekly_receiving', 'rec_catches'],
-    ['weekly_defense', 'def_tackles'],
-  ];
-  const dropped = new Set();
-  for (const [table, col] of checks) {
-    if (dropped.has(table)) continue;
-    try {
-      const cols = db.prepare(`PRAGMA table_info(${table})`).all().map(r => r.name);
-      if (cols.length > 0 && !cols.includes(col)) {
-        db.exec(`DROP TABLE IF EXISTS ${table}`);
-        dropped.add(table);
-        console.log(`Dropped stale table: ${table} (missing column: ${col})`);
-      }
-    } catch(e) {}
+// ============================================================
+// SCHEMA VERSION GUARD
+// Bump SCHEMA_VERSION whenever tables change. On mismatch,
+// all data tables are dropped and rebuilt fresh from the
+// CREATE TABLE block below. Data is safe to wipe — it all
+// comes from Madden exports and can be re-exported.
+// ============================================================
+const SCHEMA_VERSION = 2;
+(function enforceSchemaVersion() {
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)`);
+    const row = db.prepare('SELECT version FROM schema_version').get();
+    const current = row ? row.version : 0;
+    if (current !== SCHEMA_VERSION) {
+      console.log(`Schema version mismatch (db=${current}, app=${SCHEMA_VERSION}) — rebuilding all tables`);
+      const DATA_TABLES = [
+        'standings','rosters',
+        'weekly_passing','weekly_rushing','weekly_receiving',
+        'weekly_defense','weekly_kicking','weekly_punting',
+        'team_stats','export_log','team_map','schedules','league_info'
+      ];
+      for (const t of DATA_TABLES) db.exec(`DROP TABLE IF EXISTS ${t}`);
+      db.exec(`DELETE FROM schema_version`);
+      db.prepare(`INSERT INTO schema_version (version) VALUES (?)`).run(SCHEMA_VERSION);
+    }
+  } catch(e) {
+    console.error('Schema version check failed:', e.message);
   }
 })();
 
@@ -274,48 +274,6 @@ db.exec(`
   );
 `);
 
-// ============================================================
-// SCHEMA MIGRATIONS (add columns to existing tables safely)
-// ============================================================
-(function runMigrations() {
-  function migrate(table, cols) {
-    try {
-      const existing = db.prepare(`PRAGMA table_info(${table})`).all().map(r => r.name);
-      for (const [col, def] of cols) {
-        if (!existing.includes(col)) {
-          try { db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`); } catch(e) {}
-        }
-      }
-    } catch(e) {}
-  }
-
-  migrate('standings', [
-    ['wins','INTEGER DEFAULT 0'], ['losses','INTEGER DEFAULT 0'], ['ties','INTEGER DEFAULT 0'],
-    ['pts_for','INTEGER DEFAULT 0'], ['pts_against','INTEGER DEFAULT 0'],
-    ['div_wins','INTEGER DEFAULT 0'], ['div_losses','INTEGER DEFAULT 0'], ['div_ties','INTEGER DEFAULT 0'],
-    ['conf_wins','INTEGER DEFAULT 0'], ['conf_losses','INTEGER DEFAULT 0'],
-    ['seed','INTEGER DEFAULT 0'], ['prev_rank','INTEGER DEFAULT 0'],
-    ['off_total_yds','INTEGER DEFAULT 0'], ['off_pass_yds','INTEGER DEFAULT 0'], ['off_rush_yds','INTEGER DEFAULT 0'],
-    ['def_total_yds','INTEGER DEFAULT 0'], ['def_pass_yds','INTEGER DEFAULT 0'], ['def_rush_yds','INTEGER DEFAULT 0'],
-    ['updated_at',"TEXT DEFAULT (datetime('now'))"]
-  ]);
-
-  migrate('export_log', [
-    ['raw_keys',"TEXT DEFAULT ''"],
-    ['exported_at',"TEXT DEFAULT (datetime('now'))"]
-  ]);
-
-  migrate('league_info', [
-    ['export_type',"TEXT NOT NULL DEFAULT 'unknown'"],
-    ['imported_at',"TEXT DEFAULT (datetime('now'))"]
-  ]);
-
-  migrate('rosters', [
-    ['injury_length','INTEGER DEFAULT 0'], ['contract_years','INTEGER DEFAULT 0'],
-    ['contract_salary','INTEGER DEFAULT 0'], ['is_on_ir','INTEGER DEFAULT 0'],
-    ['updated_at',"TEXT DEFAULT (datetime('now'))"]
-  ]);
-})();
 
 // ============================================================
 // MIDDLEWARE
