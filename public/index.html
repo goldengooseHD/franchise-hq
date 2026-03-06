@@ -479,33 +479,24 @@ async function loadWeekly(type){
   el.innerHTML=h;
 }
 
-// === ROSTER STATS FALLBACK ===
+// === NO STATS EMPTY STATE ===
 async function loadRosterStats(type,el){
   const cfg={
-    passing:{positions:['QB'],cols:['OVR','THP','SAC','MAC','DAC'],keys:['overall','throw_power','throw_acc_short','throw_acc_mid','throw_acc_deep'],label:'Passing'},
-    rushing:{positions:['HB','FB'],cols:['OVR','SPD','TRK','ELU','AGI'],keys:['overall','speed_rating','trucking','elusiveness','agility_rating'],label:'Rushing'},
-    receiving:{positions:['WR','TE'],cols:['OVR','CTH','SPD','AWR','JKM'],keys:['overall','catching','speed_rating','awareness_rating','juke_move'],label:'Receiving'},
-    defense:{positions:['MLB','LOLB','ROLB','CB','SS','FS','DT','LE','RE'],cols:['OVR','TKL','PUR','HIT','MCV'],keys:['overall','tackle','pursuit','hit_power','man_coverage'],label:'Defense'},
+    passing:{label:'Passing',cols:['Player','Team','Wk','Att','Cmp','Yds','TD','INT','Rating']},
+    rushing:{label:'Rushing',cols:['Player','Team','Wk','Att','Yds','TD','Fum','Lng']},
+    receiving:{label:'Receiving',cols:['Player','Team','Wk','Rec','Yds','TD','Drops','Lng']},
+    defense:{label:'Defense',cols:['Player','Team','Wk','Tkl','Sacks','INT','FF','FR','PD']},
   };
-  const c=cfg[type];
-  if(!c){el.innerHTML=`<div class="card"><div class="empty"><h4>No data</h4></div></div>`;return;}
-  let all=[];
-  for(const pos of c.positions){
-    const r=await api(`/api/rosters?position=${pos}&sort=overall&limit=60`);
-    all=[...all,...r];
-  }
-  all.sort((a,b)=>b.overall-a.overall);
-  let h=`<div class="sb"><h2>${c.label}</h2><span style="font-size:10px;color:var(--txd);font-family:'JetBrains Mono';letter-spacing:.06em;text-transform:uppercase">Player Ratings · Stat leaders appear after exporting weekly stats</span></div>`;
-  h+=`<div class="card"><div style="overflow-x:auto"><table>
-    <thead><tr><th>Player</th><th>Pos</th><th>Team</th>${c.cols.map(x=>`<th class="tc">${x}</th>`).join('')}</tr></thead><tbody>`;
-  all.forEach(p=>{
-    h+=`<tr><td style="color:var(--txb);font-weight:500">${p.first_name} ${p.last_name}${p.jersey_num?` <span style="color:var(--txd);font-size:10px;font-family:'JetBrains Mono'">#${p.jersey_num}</span>`:''}</td>
-      <td><span class="pt">${p.position}</span></td>
-      <td>${tc(p.team_abbr)}</td>
-      ${c.keys.map((k,i)=>i===0?`<td class="tc"><span class="ovr ${ovc(p[k]||0)}">${p[k]||'—'}</span></td>`:`<td class="tc mono">${p[k]||'—'}</td>`).join('')}
-    </tr>`;
-  });
-  h+=`</tbody></table></div></div>`;
+  const c=cfg[type]||{label:type,cols:['Player','Team','Yds','TD']};
+  const label=c.label;
+  let h=`<div class="sb"><h2>${label}</h2></div>`;
+  h+=`<div class="card"><div class="ch"><h3>${label} Leaders</h3></div>
+    <div style="overflow-x:auto"><table>
+    <thead><tr>${c.cols.map(x=>`<th${x!=='Player'&&x!=='Team'?' class="tc"':''}>${x}</th>`).join('')}</tr></thead>
+    <tbody><tr><td colspan="${c.cols.length}" style="padding:40px 24px;text-align:center">
+      <div style="font-size:13px;font-weight:500;color:var(--txd);margin-bottom:6px">No stats exported yet</div>
+      <div style="font-size:11px;color:var(--txd);opacity:.55">In the Companion App → Stats → export Player Stats for this week</div>
+    </td></tr></tbody></table></div></div>`;
   el.innerHTML=h;
 }
 
