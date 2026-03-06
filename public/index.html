@@ -307,7 +307,7 @@ async function loadStandings(){
           const bp=(b.wins+b.losses+b.ties)>0?b.wins/(b.wins+b.losses+b.ties):0;return bp-ap||(b.pts_for||0)-(a.pts_for||0);});
       h+=`<div class="card"><div class="ch"><h3>${div}</h3></div><div style="overflow-x:auto"><table>
         <thead><tr><th>Team</th><th class="tc">W</th><th class="tc">L</th>
-        <th class="tc">PCT</th><th class="tc">PF</th><th class="tc">PA</th><th class="tc">DIFF</th></tr></thead><tbody>`;
+        <th class="tc">PCT</th><th class="tc">PF/G</th><th class="tc">PA/G</th><th class="tc">DIFF/G</th></tr></thead><tbody>`;
       teams.forEach((tm,i)=>{
         const t=ti(tm.a);const tot=tm.wins+tm.losses+tm.ties;
         const pct=tot>0?tm.wins/tot:0;const diff=(tm.pts_for||0)-(tm.pts_against||0);
@@ -517,8 +517,8 @@ async function loadTeamStats(){
   let h=`<div class="sb"><h2>Team Stats</h2></div>`;
 
   const off=[...rows].sort((a,b)=>b.off_total_yds-a.off_total_yds);
-  h+=`<div class="card"><div class="ch"><h3>Offense</h3><span class="badge">${off.length} teams</span></div><div style="overflow-x:auto"><table>
-    <thead><tr><th>Team</th><th class="tc">TOT YDS</th><th class="tc">PASS YDS</th><th class="tc">RUSH YDS</th><th class="tc">TO DIFF</th></tr></thead><tbody>`;
+  h+=`<div class="card"><div class="ch"><h3>Offense</h3><span class="badge">${off.length} teams</span><span style="font-size:10px;color:var(--txd);font-family:'JetBrains Mono';letter-spacing:.05em">per game</span></div><div style="overflow-x:auto"><table>
+    <thead><tr><th>Team</th><th class="tc">TOT YDS/G</th><th class="tc">PASS YDS/G</th><th class="tc">RUSH YDS/G</th><th class="tc">TO DIFF</th></tr></thead><tbody>`;
   off.forEach((r,i)=>{
     const td=r.turnover_diff||0;
     h+=`<tr ${i===0?'style="background:rgba(255,255,255,.015)"':''}><td>${tc(r.team_abbr)}</td>
@@ -530,8 +530,8 @@ async function loadTeamStats(){
   h+=`</tbody></table></div></div>`;
 
   const def=[...rows].sort((a,b)=>a.def_total_yds-b.def_total_yds);
-  h+=`<div class="card"><div class="ch"><h3>Defense</h3><span class="badge">${def.length} teams</span></div><div style="overflow-x:auto"><table>
-    <thead><tr><th>Team</th><th class="tc">TOT YDS ALLOWED</th><th class="tc">PASS YDS ALLOWED</th><th class="tc">RUSH YDS ALLOWED</th></tr></thead><tbody>`;
+  h+=`<div class="card"><div class="ch"><h3>Defense</h3><span class="badge">${def.length} teams</span><span style="font-size:10px;color:var(--txd);font-family:'JetBrains Mono';letter-spacing:.05em">per game</span></div><div style="overflow-x:auto"><table>
+    <thead><tr><th>Team</th><th class="tc">TOT YDS/G</th><th class="tc">PASS YDS/G</th><th class="tc">RUSH YDS/G</th></tr></thead><tbody>`;
   def.forEach((r,i)=>{
     h+=`<tr ${i===0?'style="background:rgba(255,255,255,.015)"':''}><td>${tc(r.team_abbr)}</td>
       <td class="tc mono" style="color:var(--txb);font-weight:600">${r.def_total_yds||0}</td>
