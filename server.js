@@ -248,8 +248,18 @@ db.exec(`
 // SCHEMA MIGRATIONS (add columns to existing tables safely)
 // ============================================================
 (function runMigrations() {
-  const standingsCols = db.prepare("PRAGMA table_info(standings)").all().map(r => r.name);
-  const standingsNewCols = [
+  function migrate(table, cols) {
+    try {
+      const existing = db.prepare(`PRAGMA table_info(${table})`).all().map(r => r.name);
+      for (const [col, def] of cols) {
+        if (!existing.includes(col)) {
+          try { db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`); } catch(e) {}
+        }
+      }
+    } catch(e) {}
+  }
+
+  migrate('standings', [
     ['wins','INTEGER DEFAULT 0'], ['losses','INTEGER DEFAULT 0'], ['ties','INTEGER DEFAULT 0'],
     ['pts_for','INTEGER DEFAULT 0'], ['pts_against','INTEGER DEFAULT 0'],
     ['div_wins','INTEGER DEFAULT 0'], ['div_losses','INTEGER DEFAULT 0'], ['div_ties','INTEGER DEFAULT 0'],
@@ -257,13 +267,24 @@ db.exec(`
     ['seed','INTEGER DEFAULT 0'], ['prev_rank','INTEGER DEFAULT 0'],
     ['off_total_yds','INTEGER DEFAULT 0'], ['off_pass_yds','INTEGER DEFAULT 0'], ['off_rush_yds','INTEGER DEFAULT 0'],
     ['def_total_yds','INTEGER DEFAULT 0'], ['def_pass_yds','INTEGER DEFAULT 0'], ['def_rush_yds','INTEGER DEFAULT 0'],
-    ['updated_at','TEXT DEFAULT (datetime(\'now\'))']
-  ];
-  for (const [col, def] of standingsNewCols) {
-    if (!standingsCols.includes(col)) {
-      try { db.exec(`ALTER TABLE standings ADD COLUMN ${col} ${def}`); } catch(e) {}
-    }
-  }
+    ['updated_at',"TEXT DEFAULT (datetime('now'))"]
+  ]);
+
+  migrate('export_log', [
+    ['raw_keys',"TEXT DEFAULT ''"],
+    ['exported_at',"TEXT DEFAULT (datetime('now'))"]
+  ]);
+
+  migrate('league_info', [
+    ['export_type',"TEXT NOT NULL DEFAULT 'unknown'"],
+    ['imported_at',"TEXT DEFAULT (datetime('now'))"]
+  ]);
+
+  migrate('rosters', [
+    ['injury_length','INTEGER DEFAULT 0'], ['contract_years','INTEGER DEFAULT 0'],
+    ['contract_salary','INTEGER DEFAULT 0'], ['is_on_ir','INTEGER DEFAULT 0'],
+    ['updated_at',"TEXT DEFAULT (datetime('now'))"]
+  ]);
 })();
 
 // ============================================================
