@@ -479,24 +479,70 @@ async function loadWeekly(type){
   el.innerHTML=h;
 }
 
-// === NO STATS EMPTY STATE ===
+// === RATING-BASED LEADERS (when no game stats) ===
 async function loadRosterStats(type,el){
   const cfg={
-    passing:{label:'Passing',cols:['Player','Team','Wk','Att','Cmp','Yds','TD','INT','Rating']},
-    rushing:{label:'Rushing',cols:['Player','Team','Wk','Att','Yds','TD','Fum','Lng']},
-    receiving:{label:'Receiving',cols:['Player','Team','Wk','Rec','Yds','TD','Drops','Lng']},
-    defense:{label:'Defense',cols:['Player','Team','Wk','Tkl','Sacks','INT','FF','FR','PD']},
+    passing:{
+      label:'Passing',badge:'ARM TALENT',
+      positions:['QB'],
+      score:p=>Math.round((p.throw_acc_short+p.throw_acc_mid+p.throw_acc_deep+p.throw_power)/4),
+      attrs:[
+        {l:'THP',k:'throw_power'},{l:'SAC',k:'throw_acc_short'},
+        {l:'MAC',k:'throw_acc_mid'},{l:'DAC',k:'throw_acc_deep'},
+      ]
+    },
+    rushing:{
+      label:'Rushing',badge:'BACKFIELD',
+      positions:['HB','FB'],
+      score:p=>Math.round((p.speed_rating+p.trucking+p.elusiveness+p.carrying)/4),
+      attrs:[
+        {l:'SPD',k:'speed_rating'},{l:'TRK',k:'trucking'},
+        {l:'ELU',k:'elusiveness'},{l:'CTH',k:'carrying'},
+      ]
+    },
+    receiving:{
+      label:'Receiving',badge:'PASS CATCHERS',
+      positions:['WR','TE','HB'],
+      score:p=>Math.round((p.catching+p.speed_rating+p.awareness_rating)/3),
+      attrs:[
+        {l:'CTH',k:'catching'},{l:'SPD',k:'speed_rating'},
+        {l:'AWR',k:'awareness_rating'},{l:'JKM',k:'juke_move'},
+      ]
+    },
+    defense:{
+      label:'Defense',badge:'DEFENDERS',
+      positions:['MLB','LOLB','ROLB','CB','SS','FS','DT','LE','RE'],
+      score:p=>Math.round((p.tackle+p.pursuit+p.hit_power)/3),
+      attrs:[
+        {l:'TKL',k:'tackle'},{l:'PUR',k:'pursuit'},
+        {l:'HIT',k:'hit_power'},{l:'MCV',k:'man_coverage'},
+      ]
+    },
   };
-  const c=cfg[type]||{label:type,cols:['Player','Team','Yds','TD']};
-  const label=c.label;
-  let h=`<div class="sb"><h2>${label}</h2></div>`;
-  h+=`<div class="card"><div class="ch"><h3>${label} Leaders</h3></div>
-    <div style="overflow-x:auto"><table>
-    <thead><tr>${c.cols.map(x=>`<th${x!=='Player'&&x!=='Team'?' class="tc"':''}>${x}</th>`).join('')}</tr></thead>
-    <tbody><tr><td colspan="${c.cols.length}" style="padding:40px 24px;text-align:center">
-      <div style="font-size:13px;font-weight:500;color:var(--txd);margin-bottom:6px">No stats exported yet</div>
-      <div style="font-size:11px;color:var(--txd);opacity:.55">In the Companion App → Stats → export Player Stats for this week</div>
-    </td></tr></tbody></table></div></div>`;
+  const c=cfg[type];
+  if(!c){el.innerHTML=`<div class="card"><div class="empty"><h4>No data</h4></div></div>`;return;}
+  let all=[];
+  for(const pos of c.positions){
+    const r=await api(`/api/rosters?position=${pos}&sort=overall&limit=60`);
+    all=[...all,...r];
+  }
+  all.sort((a,b)=>c.score(b)-c.score(a));
+  const top=all.slice(0,30);
+  let h=`<div class="sb"><h2>${c.label}</h2><span style="font-size:10px;color:var(--txd);font-family:'JetBrains Mono';letter-spacing:.06em;text-transform:uppercase">Ratings-based · game stats load once exported</span></div>`;
+  h+=`<div class="card"><div class="ch"><h3>${c.badge}</h3></div><div style="overflow-x:auto"><table>
+    <thead><tr><th>#</th><th>Player</th><th>Pos</th><th>Team</th>${c.attrs.map(a=>`<th class="tc">${a.l}</th>`).join('')}</tr></thead><tbody>`;
+  top.forEach((p,i)=>{
+    const rank=i+1;
+    const rankStyle=rank===1?'color:var(--yel);font-weight:700':rank<=3?'color:var(--tx);font-weight:600':'color:var(--txd)';
+    h+=`<tr>
+      <td class="mono" style="${rankStyle};font-size:11px">${rank}</td>
+      <td style="color:var(--txb);font-weight:500">${p.first_name} ${p.last_name}${p.jersey_num?` <span style="color:var(--txd);font-size:10px;font-family:'JetBrains Mono'">#${p.jersey_num}</span>`:''}</td>
+      <td><span class="pt">${p.position}</span></td>
+      <td>${tc(p.team_abbr)}</td>
+      ${c.attrs.map(a=>`<td class="tc mono">${p[a.k]||'—'}</td>`).join('')}
+    </tr>`;
+  });
+  h+=`</tbody></table></div></div>`;
   el.innerHTML=h;
 }
 
