@@ -201,6 +201,7 @@ select option{background:var(--bg3)}
   <button onclick="go('rushing',this)">Rushing</button>
   <button onclick="go('receiving',this)">Receiving</button>
   <button onclick="go('defense',this)">Defense</button>
+  <button onclick="go('teamstats',this)">Team Stats</button>
   <button onclick="go('setup',this)">Setup</button>
 </nav>
 
@@ -212,6 +213,7 @@ select option{background:var(--bg3)}
   <div id="t-rushing" class="tab"></div>
   <div id="t-receiving" class="tab"></div>
   <div id="t-defense" class="tab"></div>
+  <div id="t-teamstats" class="tab"></div>
   <div id="t-setup" class="tab"></div>
 </main>
 
@@ -233,6 +235,7 @@ NYJ:{n:"Jets",c:"New York",cl:"#125740"},PHI:{n:"Eagles",c:"Philadelphia",cl:"#0
 PIT:{n:"Steelers",c:"Pittsburgh",cl:"#FFB612"},SF:{n:"49ers",c:"San Francisco",cl:"#AA0000"},
 SEA:{n:"Seahawks",c:"Seattle",cl:"#002244"},TB:{n:"Buccaneers",c:"Tampa Bay",cl:"#D50A0A"},
 TEN:{n:"Titans",c:"Tennessee",cl:"#0C2340"},WAS:{n:"Commanders",c:"Washington",cl:"#5A1414"},
+AZ:{n:"Cardinals",c:"Arizona",cl:"#97233F"},
 FA:{n:"Free Agent",c:"",cl:"#3f3f46"}};
 
 const DIVS={"AFC East":["BUF","MIA","NE","NYJ"],"AFC North":["BAL","CIN","CLE","PIT"],
@@ -282,6 +285,7 @@ async function load(tab){
   else if(tab==='rushing')await loadWeekly('rushing');
   else if(tab==='receiving')await loadWeekly('receiving');
   else if(tab==='defense')await loadWeekly('defense');
+  else if(tab==='teamstats')await loadTeamStats();
   else if(tab==='setup')loadSetup();
 }
 
@@ -328,30 +332,61 @@ async function loadStandings(){
 async function loadScores(){
   const rows=await api('/api/schedules');
   const el=document.getElementById('t-scores');
-  const complete=rows.filter(r=>r.is_complete);
-  if(!complete.length){el.innerHTML=`<div class="card"><div class="empty"><h4>No completed games</h4><p>Export schedule data from the Companion App</p></div></div>`;return;}
+  if(!rows.length){el.innerHTML=`<div class="card"><div class="empty"><h4>No schedule data</h4><p>Export schedule data from the Companion App</p></div></div>`;return;}
 
-  const byWeek={};complete.forEach(g=>{if(!byWeek[g.week])byWeek[g.week]=[];byWeek[g.week].push(g);});
-  const weeks=Object.keys(byWeek).sort((a,b)=>b-a);
+  // A game is "played" if it has a score OR is marked complete
+  const played=rows.filter(r=>r.is_complete||r.home_score>0||r.away_score>0);
+  const upcoming=rows.filter(r=>!r.is_complete&&r.home_score===0&&r.away_score===0);
+
   let h=`<div class="sb"><h2>Scores</h2></div>`;
-  weeks.forEach(wk=>{
-    h+=`<div class="card"><div class="ch"><h3>Week ${wk}</h3><span class="badge">${byWeek[wk].length} games</span></div><div class="sg">`;
-    byWeek[wk].forEach(g=>{
-      const ht=ti(g.home_team),at=ti(g.away_team);
-      const hw=g.home_score>g.away_score,aw=g.away_score>g.home_score;
-      const bar=hw?ht.cl:at.cl;
-      h+=`<div class="gc">
-        <div class="wl">Week ${g.week} &middot; Final</div>
-        <div class="mu">
-          <div class="ts" style="opacity:${aw?1:.4}"><div class="dot" style="background:${at.cl}"></div><span class="ab">${g.away_team}</span></div>
-          <div class="sc"><span class="sv ${aw?'sw':'sl'}">${g.away_score}</span><span class="sd">–</span><span class="sv ${hw?'sw':'sl'}">${g.home_score}</span></div>
-          <div class="ts" style="opacity:${hw?1:.4};flex-direction:row-reverse"><div class="dot" style="background:${ht.cl}"></div><span class="ab">${g.home_team}</span></div>
-        </div>
-        <div class="wb" style="background:${bar}"></div>
-      </div>`;
+
+  if(played.length){
+    const byWeek={};played.forEach(g=>{if(!byWeek[g.week])byWeek[g.week]=[];byWeek[g.week].push(g);});
+    const weeks=Object.keys(byWeek).sort((a,b)=>b-a);
+    weeks.forEach(wk=>{
+      h+=`<div class="card"><div class="ch"><h3>Week ${wk}</h3><span class="badge">${byWeek[wk].length} games</span></div><div class="sg">`;
+      byWeek[wk].forEach(g=>{
+        const ht=ti(g.home_team),at=ti(g.away_team);
+        const hw=g.home_score>g.away_score,aw=g.away_score>g.home_score;
+        const bar=hw?ht.cl:at.cl;
+        h+=`<div class="gc">
+          <div class="wl">Week ${g.week} &middot; Final</div>
+          <div class="mu">
+            <div class="ts" style="opacity:${aw?1:.4}"><div class="dot" style="background:${at.cl}"></div><span class="ab">${g.away_team}</span></div>
+            <div class="sc"><span class="sv ${aw?'sw':'sl'}">${g.away_score}</span><span class="sd">–</span><span class="sv ${hw?'sw':'sl'}">${g.home_score}</span></div>
+            <div class="ts" style="opacity:${hw?1:.4};flex-direction:row-reverse"><div class="dot" style="background:${ht.cl}"></div><span class="ab">${g.home_team}</span></div>
+          </div>
+          <div class="wb" style="background:${bar}"></div>
+        </div>`;
+      });
+      h+=`</div></div>`;
     });
-    h+=`</div></div>`;
-  });
+  }
+
+  if(upcoming.length){
+    const byWeek={};upcoming.forEach(g=>{if(!byWeek[g.week])byWeek[g.week]=[];byWeek[g.week].push(g);});
+    const weeks=Object.keys(byWeek).sort((a,b)=>a-b);
+    weeks.forEach(wk=>{
+      h+=`<div class="card"><div class="ch"><h3>Week ${wk} — Upcoming</h3><span class="badge">${byWeek[wk].length} matchups</span></div><div class="sg">`;
+      byWeek[wk].forEach(g=>{
+        const ht=ti(g.home_team),at=ti(g.away_team);
+        h+=`<div class="gc">
+          <div class="wl" style="color:var(--txd)">Week ${g.week} &middot; Upcoming</div>
+          <div class="mu">
+            <div class="ts"><div class="dot" style="background:${at.cl}"></div><span class="ab">${g.away_team}</span><span class="tn" style="display:none">${at.n}</span></div>
+            <div class="sc"><span class="sv" style="color:var(--txd);font-size:14px">vs</span></div>
+            <div class="ts" style="flex-direction:row-reverse"><div class="dot" style="background:${ht.cl}"></div><span class="ab">${g.home_team}</span></div>
+          </div>
+        </div>`;
+      });
+      h+=`</div></div>`;
+    });
+  }
+
+  if(!played.length&&!upcoming.length){
+    h+=`<div class="card"><div class="empty"><h4>No games yet</h4><p>Export schedule from the Companion App</p></div></div>`;
+  }
+
   el.innerHTML=h;
 }
 
@@ -400,7 +435,7 @@ async function loadRoster(){
 async function loadWeekly(type){
   const rows=await api(`/api/stats/${type}?limit=100`);
   const el=document.getElementById('t-'+type);
-  if(!rows.length){el.innerHTML=`<div class="card"><div class="empty"><h4>No ${type} stats</h4><p>Export weekly stats from the Companion App</p></div></div>`;return;}
+  if(!rows.length){await loadRosterStats(type,el);return;}
 
   const cols={
     passing:{h:['Player','Team','Wk','Att','Cmp','Yds','TD','INT','Rating'],
@@ -440,6 +475,69 @@ async function loadWeekly(type){
   h+=`<div class="card"><div style="overflow-x:auto"><table>
     <thead><tr>${c.h.map(x=>`<th${x!=='Player'&&x!=='Team'?' class="tc"':''}>${x}</th>`).join('')}</tr></thead><tbody>`;
   rows.forEach(r=>{h+=`<tr>${c.f(r)}</tr>`;});
+  h+=`</tbody></table></div></div>`;
+  el.innerHTML=h;
+}
+
+// === ROSTER STATS FALLBACK ===
+async function loadRosterStats(type,el){
+  const cfg={
+    passing:{positions:['QB'],cols:['OVR','THP','SAC','MAC','DAC'],keys:['overall','throw_power','throw_acc_short','throw_acc_mid','throw_acc_deep'],label:'Passing'},
+    rushing:{positions:['HB','FB'],cols:['OVR','SPD','TRK','ELU','AGI'],keys:['overall','speed_rating','trucking','elusiveness','agility_rating'],label:'Rushing'},
+    receiving:{positions:['WR','TE'],cols:['OVR','CTH','SPD','AWR','JKM'],keys:['overall','catching','speed_rating','awareness_rating','juke_move'],label:'Receiving'},
+    defense:{positions:['MLB','LOLB','ROLB','CB','SS','FS','DT','LE','RE'],cols:['OVR','TKL','PUR','HIT','MCV'],keys:['overall','tackle','pursuit','hit_power','man_coverage'],label:'Defense'},
+  };
+  const c=cfg[type];
+  if(!c){el.innerHTML=`<div class="card"><div class="empty"><h4>No data</h4></div></div>`;return;}
+  let all=[];
+  for(const pos of c.positions){
+    const r=await api(`/api/rosters?position=${pos}&sort=overall&limit=60`);
+    all=[...all,...r];
+  }
+  all.sort((a,b)=>b.overall-a.overall);
+  let h=`<div class="sb"><h2>${c.label}</h2><span style="font-size:10px;color:var(--txd);font-family:'JetBrains Mono';letter-spacing:.06em;text-transform:uppercase">Player Ratings · Stat leaders appear after exporting weekly stats</span></div>`;
+  h+=`<div class="card"><div style="overflow-x:auto"><table>
+    <thead><tr><th>Player</th><th>Pos</th><th>Team</th>${c.cols.map(x=>`<th class="tc">${x}</th>`).join('')}</tr></thead><tbody>`;
+  all.forEach(p=>{
+    h+=`<tr><td style="color:var(--txb);font-weight:500">${p.first_name} ${p.last_name}${p.jersey_num?` <span style="color:var(--txd);font-size:10px;font-family:'JetBrains Mono'">#${p.jersey_num}</span>`:''}</td>
+      <td><span class="pt">${p.position}</span></td>
+      <td>${tc(p.team_abbr)}</td>
+      ${c.keys.map((k,i)=>i===0?`<td class="tc"><span class="ovr ${ovc(p[k]||0)}">${p[k]||'—'}</span></td>`:`<td class="tc mono">${p[k]||'—'}</td>`).join('')}
+    </tr>`;
+  });
+  h+=`</tbody></table></div></div>`;
+  el.innerHTML=h;
+}
+
+// === TEAM STATS ===
+async function loadTeamStats(){
+  const rows=await api('/api/team-stats');
+  const el=document.getElementById('t-teamstats');
+  if(!rows.length){el.innerHTML=`<div class="card"><div class="empty"><h4>No team stats</h4><p>Export team stats from the Companion App</p></div></div>`;return;}
+  let h=`<div class="sb"><h2>Team Stats</h2></div>`;
+
+  const off=[...rows].sort((a,b)=>b.off_total_yds-a.off_total_yds);
+  h+=`<div class="card"><div class="ch"><h3>Offense</h3><span class="badge">${off.length} teams</span></div><div style="overflow-x:auto"><table>
+    <thead><tr><th>Team</th><th class="tc">TOT YDS</th><th class="tc">PASS YDS</th><th class="tc">RUSH YDS</th><th class="tc">TO DIFF</th></tr></thead><tbody>`;
+  off.forEach((r,i)=>{
+    const td=r.turnover_diff||0;
+    h+=`<tr ${i===0?'style="background:rgba(255,255,255,.015)"':''}><td>${tc(r.team_abbr)}</td>
+      <td class="tc mono" style="color:var(--txb);font-weight:600">${r.off_total_yds||0}</td>
+      <td class="tc mono">${r.off_pass_yds||0}</td>
+      <td class="tc mono">${r.off_rush_yds||0}</td>
+      <td class="tc ${td>0?'dp':td<0?'dn':'dz'} mono">${td>0?'+':''}${td}</td></tr>`;
+  });
+  h+=`</tbody></table></div></div>`;
+
+  const def=[...rows].sort((a,b)=>a.def_total_yds-b.def_total_yds);
+  h+=`<div class="card"><div class="ch"><h3>Defense</h3><span class="badge">${def.length} teams</span></div><div style="overflow-x:auto"><table>
+    <thead><tr><th>Team</th><th class="tc">TOT YDS ALLOWED</th><th class="tc">PASS YDS ALLOWED</th><th class="tc">RUSH YDS ALLOWED</th></tr></thead><tbody>`;
+  def.forEach((r,i)=>{
+    h+=`<tr ${i===0?'style="background:rgba(255,255,255,.015)"':''}><td>${tc(r.team_abbr)}</td>
+      <td class="tc mono" style="color:var(--txb);font-weight:600">${r.def_total_yds||0}</td>
+      <td class="tc mono">${r.def_pass_yds||0}</td>
+      <td class="tc mono">${r.def_rush_yds||0}</td></tr>`;
+  });
   h+=`</tbody></table></div></div>`;
   el.innerHTML=h;
 }
