@@ -21,6 +21,7 @@ db.pragma('foreign_keys = ON');
     ['rosters', 'overall'],
     ['rosters', 'dev_trait'],
     ['standings', 'wins'],
+    ['export_log', 'export_type'],
     ['export_log', 'raw_keys'],
     ['export_log', 'exported_at'],
     ['league_info', 'export_type'],
