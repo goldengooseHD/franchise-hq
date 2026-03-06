@@ -14,6 +14,35 @@ const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
+// Drop stale tables that are missing critical columns (they'll be recreated below)
+// This handles the case where old DB has tables created before schema was finalized
+(function dropStaleTables() {
+  const checks = [
+    ['rosters', 'overall'],
+    ['rosters', 'dev_trait'],
+    ['standings', 'wins'],
+    ['export_log', 'raw_keys'],
+    ['export_log', 'exported_at'],
+    ['league_info', 'export_type'],
+    ['weekly_passing', 'passer_rating'],
+    ['weekly_rushing', 'rush_yds'],
+    ['weekly_receiving', 'rec_catches'],
+    ['weekly_defense', 'def_tackles'],
+  ];
+  const dropped = new Set();
+  for (const [table, col] of checks) {
+    if (dropped.has(table)) continue;
+    try {
+      const cols = db.prepare(`PRAGMA table_info(${table})`).all().map(r => r.name);
+      if (cols.length > 0 && !cols.includes(col)) {
+        db.exec(`DROP TABLE IF EXISTS ${table}`);
+        dropped.add(table);
+        console.log(`Dropped stale table: ${table} (missing column: ${col})`);
+      }
+    } catch(e) {}
+  }
+})();
+
 // Create tables
 db.exec(`
   CREATE TABLE IF NOT EXISTS league_info (
