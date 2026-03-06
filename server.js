@@ -245,6 +245,28 @@ db.exec(`
 `);
 
 // ============================================================
+// SCHEMA MIGRATIONS (add columns to existing tables safely)
+// ============================================================
+(function runMigrations() {
+  const standingsCols = db.prepare("PRAGMA table_info(standings)").all().map(r => r.name);
+  const standingsNewCols = [
+    ['wins','INTEGER DEFAULT 0'], ['losses','INTEGER DEFAULT 0'], ['ties','INTEGER DEFAULT 0'],
+    ['pts_for','INTEGER DEFAULT 0'], ['pts_against','INTEGER DEFAULT 0'],
+    ['div_wins','INTEGER DEFAULT 0'], ['div_losses','INTEGER DEFAULT 0'], ['div_ties','INTEGER DEFAULT 0'],
+    ['conf_wins','INTEGER DEFAULT 0'], ['conf_losses','INTEGER DEFAULT 0'],
+    ['seed','INTEGER DEFAULT 0'], ['prev_rank','INTEGER DEFAULT 0'],
+    ['off_total_yds','INTEGER DEFAULT 0'], ['off_pass_yds','INTEGER DEFAULT 0'], ['off_rush_yds','INTEGER DEFAULT 0'],
+    ['def_total_yds','INTEGER DEFAULT 0'], ['def_pass_yds','INTEGER DEFAULT 0'], ['def_rush_yds','INTEGER DEFAULT 0'],
+    ['updated_at','TEXT DEFAULT (datetime(\'now\'))']
+  ];
+  for (const [col, def] of standingsNewCols) {
+    if (!standingsCols.includes(col)) {
+      try { db.exec(`ALTER TABLE standings ADD COLUMN ${col} ${def}`); } catch(e) {}
+    }
+  }
+})();
+
+// ============================================================
 // MIDDLEWARE
 // ============================================================
 app.use(cors());
