@@ -3,8 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FRANCHISE HQ — The Showers</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Franchise HQ — Free Madden Franchise Dashboard</title>
+<meta name="description" content="Free live dashboard for your Madden franchise league. Standings, scores, rosters, and team stats — auto-updating every 30 seconds.">
+<meta property="og:title" content="Franchise HQ — Your Madden Franchise, Live.">
+<meta property="og:description" content="Free live dashboard for Madden franchise leagues. Standings, scores, rosters, team stats. Works with the Companion App.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://franchise-hq-production.up.railway.app">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Franchise HQ — Your Madden Franchise, Live.">
+<meta name="twitter:description" content="Free live dashboard for Madden franchise leagues. Auto-updating standings, scores, rosters.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect rx='12' width='100' height='100' fill='%232563eb'/><text x='50' y='68' text-anchor='middle' font-family='sans-serif' font-weight='700' font-size='42' fill='white'>FH</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg:#09090b;--bg2:#0f0f12;--bg3:#141417;--bg4:#1c1c20;
@@ -156,6 +165,83 @@ select option{background:var(--bg3)}
 .info-box .hl{color:var(--accent2);font-weight:500}
 .info-box code{background:var(--bg4);padding:2px 7px;border-radius:3px;font-size:11px;color:var(--txb);font-family:'JetBrains Mono';border:1px solid var(--bdr)}
 
+/* ========== HERO SECTION ========== */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:60px 24px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);
+  width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,rgba(37,99,235,.15) 0%,transparent 70%);
+  animation:heroGlow 4s ease-in-out infinite;pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;
+  background-image:radial-gradient(rgba(255,255,255,.03) 1px,transparent 1px);
+  background-size:24px 24px;
+  mask-image:radial-gradient(ellipse at center,black 30%,transparent 70%);pointer-events:none}
+@keyframes heroGlow{0%,100%{opacity:.6;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}}
+
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;
+  background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:99px;
+  font-family:'JetBrains Mono';font-size:10px;letter-spacing:.06em;color:var(--grn);
+  text-transform:uppercase;margin-bottom:32px;animation:heroFadeUp .6s ease both;animation-delay:.1s;opacity:0}
+.hero-badge .live-dot{width:6px;height:6px;border-radius:50%;background:var(--grn);animation:pulse 2.5s infinite}
+
+.hero h1{font-family:'Inter';font-weight:800;font-size:clamp(36px,6vw,64px);
+  color:var(--txb);line-height:1.1;margin-bottom:20px;letter-spacing:-.03em;
+  animation:heroFadeUp .6s ease both;animation-delay:.2s;opacity:0}
+.hero h1 .accent{background:linear-gradient(135deg,#2563eb,#00D4FF);-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text}
+
+.hero-sub{font-size:clamp(16px,2vw,20px);color:var(--tx);max-width:560px;line-height:1.6;
+  margin-bottom:40px;animation:heroFadeUp .6s ease both;animation-delay:.3s;opacity:0}
+
+.hero-ctas{display:flex;gap:12px;margin-bottom:48px;flex-wrap:wrap;justify-content:center;
+  animation:heroFadeUp .6s ease both;animation-delay:.4s;opacity:0}
+.hero-cta-primary{padding:14px 32px;background:#2563eb;color:#fff;border:none;border-radius:8px;
+  font-family:'Inter';font-weight:600;font-size:15px;cursor:pointer;transition:all .2s;
+  box-shadow:0 0 20px rgba(37,99,235,.3)}
+.hero-cta-primary:hover{background:#3b82f6;box-shadow:0 0 30px rgba(37,99,235,.5);transform:translateY(-1px)}
+.hero-cta-secondary{padding:14px 32px;background:transparent;color:var(--tx);
+  border:1px solid var(--bdr2);border-radius:8px;
+  font-family:'Inter';font-weight:500;font-size:15px;cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;gap:8px}
+.hero-cta-secondary:hover{color:var(--txb);border-color:rgba(255,255,255,.2)}
+.hero-cta-secondary svg{width:18px;height:18px}
+
+.hero-features{display:grid;grid-template-columns:repeat(5,1fr);gap:0;max-width:700px;width:100%;
+  animation:heroFadeUp .6s ease both;animation-delay:.5s;opacity:0}
+.hero-feat{padding:16px 12px;position:relative}
+.hero-feat:not(:last-child)::after{content:'';position:absolute;right:0;top:20%;height:60%;
+  width:1px;background:var(--bdr)}
+.hero-feat-icon{font-size:20px;margin-bottom:8px}
+.hero-feat-label{font-family:'Inter';font-weight:500;font-size:11px;color:var(--tx);letter-spacing:.02em}
+
+.hero-tagline{margin-top:32px;font-family:'JetBrains Mono';font-size:10px;letter-spacing:.1em;
+  color:var(--txd);text-transform:uppercase;
+  animation:heroFadeUp .6s ease both;animation-delay:.6s;opacity:0}
+
+.hero-scroll{margin-top:40px;animation:heroFadeUp .6s ease both,heroBounce 2s ease-in-out infinite;
+  animation-delay:.7s,1.5s;opacity:0;color:var(--txd)}
+@keyframes heroFadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes heroBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+
+.hero-divider{height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.3;margin:0}
+
+/* Hero responsive */
+@media(max-width:600px){
+  .hero-features{grid-template-columns:repeat(2,1fr);gap:8px;max-width:320px}
+  .hero-feat:not(:last-child)::after{display:none}
+  .hero-ctas{flex-direction:column;align-items:center}
+}
+
+/* ========== FOOTER ========== */
+.site-footer{border-top:1px solid var(--bdr);padding:32px 24px;text-align:center;margin-top:40px}
+.site-footer-brand{font-family:'Inter';font-weight:600;font-size:14px;color:var(--txb);margin-bottom:4px}
+.site-footer-desc{font-size:11px;color:var(--txd);margin-bottom:16px}
+.site-footer-links{display:flex;gap:20px;justify-content:center;margin-bottom:16px}
+.site-footer-links a{font-family:'JetBrains Mono';font-size:11px;color:var(--tx);text-decoration:none;
+  transition:color .15s}
+.site-footer-links a:hover{color:var(--accent2)}
+.site-footer-tagline{font-family:'JetBrains Mono';font-size:9px;letter-spacing:.08em;color:var(--txd);text-transform:uppercase}
+
 /* Scrollbar */
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -164,6 +250,32 @@ select option{background:var(--bg3)}
 /* Standings layout */
 .std-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:900px){.std-grid{grid-template-columns:1fr}}
+
+/* Bracket */
+.bracket-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.bracket-grid{grid-template-columns:1fr}}
+.bk-seed{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.03)}
+.bk-seed:last-child{border-bottom:none}
+.bk-seed:hover{background:rgba(255,255,255,.02)}
+.bk-num{font-family:'JetBrains Mono';font-weight:700;font-size:11px;width:18px;text-align:center;flex-shrink:0}
+.bk-in{color:var(--grn)}.bk-bubble{color:var(--yel)}.bk-out{color:var(--txd)}
+.bk-div{font-size:9px;letter-spacing:.05em;font-weight:600;padding:2px 6px;border-radius:3px;flex-shrink:0}
+.bk-divwinner{background:rgba(37,99,235,.15);color:var(--accent2);border:1px solid rgba(37,99,235,.2)}
+.bk-wild{background:rgba(255,255,255,.04);color:var(--txd);border:1px solid rgba(255,255,255,.08)}
+.bk-rec{font-family:'JetBrains Mono';font-size:11px;color:var(--txd);margin-left:auto;flex-shrink:0}
+.bk-matchup{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.03)}
+.bk-matchup:last-child{border-bottom:none}
+.bk-team{display:flex;align-items:center;gap:7px}
+.bk-vs{font-family:'JetBrains Mono';font-size:10px;color:var(--txd);flex-shrink:0}
+.bk-score{font-family:'JetBrains Mono';font-weight:700;font-size:14px}
+.bk-win{color:var(--txb)}.bk-loss{color:var(--txd)}
+
+/* Stats type selector */
+.stat-sel{display:flex;gap:4px;margin-bottom:14px}
+.stat-sel button{padding:6px 14px;background:var(--bg3);border:1px solid var(--bdr);border-radius:4px;
+  color:var(--txd);font-family:'Inter';font-size:12px;font-weight:500;cursor:pointer;transition:all .15s}
+.stat-sel button:hover{color:var(--tx);border-color:var(--bdr2)}
+.stat-sel button.on{background:var(--accent3);border-color:rgba(59,130,246,.3);color:var(--accent2)}
 
 @media(max-width:768px){
   header{padding:0 14px;height:48px}.brand-name{font-size:12px}
@@ -177,6 +289,32 @@ select option{background:var(--bg3)}
 <body>
 <div id="notif" class="notif"></div>
 
+<section class="hero">
+  <div class="hero-badge"><div class="live-dot"></div> Live Demo Running Below</div>
+  <h1>Your Madden Franchise.<br><span class="accent">Live.</span></h1>
+  <p class="hero-sub">Free dashboard for your franchise league. Standings, scores, rosters, and stats — auto-updating every 30 seconds.</p>
+  <div class="hero-ctas">
+    <button class="hero-cta-primary" onclick="document.getElementById('dashboard-app').scrollIntoView({behavior:'smooth'})">See Live Demo</button>
+    <a class="hero-cta-secondary" href="https://github.com/goldengooseHD/franchise-hq#readme" target="_blank">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      Set Up Your League
+    </a>
+  </div>
+  <div class="hero-features">
+    <div class="hero-feat"><div class="hero-feat-icon">📊</div><div class="hero-feat-label">Standings</div></div>
+    <div class="hero-feat"><div class="hero-feat-icon">🏈</div><div class="hero-feat-label">Scores</div></div>
+    <div class="hero-feat"><div class="hero-feat-icon">📈</div><div class="hero-feat-label">Team Stats</div></div>
+    <div class="hero-feat"><div class="hero-feat-icon">🔄</div><div class="hero-feat-label">Auto-Refresh</div></div>
+    <div class="hero-feat"><div class="hero-feat-icon">🔓</div><div class="hero-feat-label">Open Source</div></div>
+  </div>
+  <div class="hero-tagline">Built with AI &middot; 100% Free &middot; Open Source</div>
+  <div class="hero-scroll">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"/></svg>
+  </div>
+</section>
+<div class="hero-divider"></div>
+
+<div id="dashboard-app">
 <header>
   <div class="brand">
     <div class="logo">FH</div>
@@ -196,18 +334,34 @@ select option{background:var(--bg3)}
 <nav id="nav">
   <button class="on" onclick="go('standings',this)">Standings</button>
   <button onclick="go('scores',this)">Scores</button>
+  <button onclick="go('stats',this)">Stats</button>
   <button onclick="go('roster',this)">Roster</button>
   <button onclick="go('teamstats',this)">Team Stats</button>
+  <button onclick="go('bracket',this)">Bracket</button>
   <button onclick="go('setup',this)">Setup</button>
 </nav>
 
 <main>
   <div id="t-standings" class="tab show"></div>
   <div id="t-scores" class="tab"></div>
+  <div id="t-stats" class="tab"></div>
   <div id="t-roster" class="tab"></div>
   <div id="t-teamstats" class="tab"></div>
+  <div id="t-bracket" class="tab"></div>
   <div id="t-setup" class="tab"></div>
 </main>
+</div><!-- /dashboard-app -->
+
+<footer class="site-footer">
+  <div class="site-footer-brand">Franchise HQ</div>
+  <div class="site-footer-desc">Free Madden Franchise Dashboard</div>
+  <div class="site-footer-links">
+    <a href="https://github.com/goldengooseHD/franchise-hq" target="_blank">GitHub</a>
+    <a href="https://github.com/goldengooseHD/franchise-hq#readme" target="_blank">Docs</a>
+    <a href="https://github.com/goldengooseHD/franchise-hq/issues" target="_blank">Report a Bug</a>
+  </div>
+  <div class="site-footer-tagline">Built by a commissioner, for commissioners.</div>
+</footer>
 
 <script>
 // === DATA ===
@@ -272,12 +426,10 @@ async function loadSummary(){
 async function load(tab){
   if(tab==='standings')await loadStandings();
   else if(tab==='scores')await loadScores();
+  else if(tab==='stats')await loadStats();
   else if(tab==='roster')await loadRoster();
-  else if(tab==='passing')await loadWeekly('passing');
-  else if(tab==='rushing')await loadWeekly('rushing');
-  else if(tab==='receiving')await loadWeekly('receiving');
-  else if(tab==='defense')await loadWeekly('defense');
   else if(tab==='teamstats')await loadTeamStats();
+  else if(tab==='bracket')await loadBracket();
   else if(tab==='setup')loadSetup();
 }
 
