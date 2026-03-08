@@ -3,7 +3,35 @@
     "allow": [
       "Bash(git init)",
       "Bash(git add .)",
-      "Bash(git commit -m \"Initial commit\")"
+      "Bash(git commit -m \"Initial commit\")",
+      "Bash(git remote add origin https://github.com/goldengooseHD/franchise-hq.git)",
+      "Bash(git branch -M main)",
+      "Bash(git add server.js)",
+      "Bash(git commit -m \"Fix: catch-all POST handler + normalize double-slash URLs from Companion App\")",
+      "Bash(git push -u origin main)",
+      "Bash(git push -u origin main --force)",
+      "Bash(git commit -m \"Fix: teamStandingInfoList + gameScheduleInfoList handlers, dynamic franchise ID resolution, team_map table\")",
+      "Bash(git push)",
+      "Bash(git commit -m \"Fix: write DB to /data \\(Railway volume mount path\\)\")",
+      "Bash(git commit -m \"Fix: migrate existing standings table to add missing columns\")",
+      "Bash(git commit -m \"Fix: migrate export_log + league_info + rosters missing columns\")",
+      "Bash(git commit -m \"Fix: drop stale tables missing columns so CREATE TABLE rebuilds them fresh\")",
+      "Bash(git commit -m \"Fix: add export_type to stale table checks for export_log\")",
+      "Bash(git commit -m \"Refactor: replace piecemeal migrations with schema version guard — drops and rebuilds all tables on version mismatch\")",
+      "Bash(curl -s https://franchise-hq-production.up.railway.app/api/exports)",
+      "Bash(curl -s https://franchise-hq-production.up.railway.app/api/standings)",
+      "Bash(curl -s \"https://franchise-hq-production.up.railway.app/api/rosters?team=DEN\")",
+      "Bash(curl -s \"https://franchise-hq-production.up.railway.app/api/schedule\")",
+      "Bash(curl -s \"https://franchise-hq-production.up.railway.app/api/schedules\")",
+      "Bash(python3 -c \"import json,sys; data=json.load\\(sys.stdin\\); [print\\(f''{d[\"\"export_type\"\"]}: {d[\"\"record_count\"\"]} records''\\) for d in sorted\\(data, key=lambda x: x[''export_type'']\\)]\")",
+      "Bash(curl -s \"https://franchise-hq-production.up.railway.app/api/team-stats\")",
+      "Bash(git add public/index.html)",
+      "Bash(git commit -m \"Feature: scores/matchups + team stats tab + roster rating fallback for stat tabs:*)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); played=[g for g in d if g[''is_complete''] or g[''home_score'']>0 or g[''away_score'']>0]; print\\(f''Games with scores: {len\\(played\\)}''\\); [print\\(f\"\"  {g[''away_team'']} {g[''away_score'']} @ {g[''home_team'']} {g[''home_score'']}\"\"\\) for g in played]\")",
+      "Bash(git commit -m \"Label PF/PA/DIFF and team yardage stats as per-game averages \\(/G\\)\")",
+      "Bash(git commit -m \"Stats tabs: remove overalls fallback, show clean empty state with correct stat columns\")",
+      "Bash(git commit -m \"Stat tabs: rating-based leaderboards with composite score ranking and rank badges\")",
+      "Bash(git commit -m \"Remove individual stat tabs — only show what we actually have clean data for\")"
     ]
   }
 }

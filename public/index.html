@@ -723,6 +723,251 @@ async function loadTeamStats(){
   el.innerHTML=h;
 }
 
+// === INDIVIDUAL STATS ===
+let statsMode='season'; // 'season' or 'weekly'
+let statsCat='passing';
+let statsWeek=null;
+
+async function loadStats(){
+  const el=document.getElementById('t-stats');
+  const weeks=await api('/api/weeks');
+  const teams=await api('/api/standings');
+
+  // Build header with sub-nav
+  let h=`<div class="sb"><h2>Player Stats</h2></div>`;
+  h+=`<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">`;
+  // Mode toggle
+  h+=`<div class="stat-sel">
+    <button class="${statsMode==='season'?'on':''}" onclick="statsMode='season';loadStats()">Season</button>
+    <button class="${statsMode==='weekly'?'on':''}" onclick="statsMode='weekly';loadStats()">Weekly</button>
+  </div>`;
+  // Category selector
+  h+=`<div class="stat-sel">
+    <button class="${statsCat==='passing'?'on':''}" onclick="statsCat='passing';loadStats()">Passing</button>
+    <button class="${statsCat==='rushing'?'on':''}" onclick="statsCat='rushing';loadStats()">Rushing</button>
+    <button class="${statsCat==='receiving'?'on':''}" onclick="statsCat='receiving';loadStats()">Receiving</button>
+    <button class="${statsCat==='defense'?'on':''}" onclick="statsCat='defense';loadStats()">Defense</button>
+    <button class="${statsCat==='kicking'?'on':''}" onclick="statsCat='kicking';loadStats()">Kicking</button>
+  </div>`;
+  // Week picker (only in weekly mode)
+  if(statsMode==='weekly' && weeks.length){
+    h+=`<select onchange="statsWeek=this.value;loadStats()" style="min-width:100px">`;
+    if(!statsWeek && weeks.length) statsWeek=String(weeks[weeks.length-1]);
+    weeks.forEach(w=>{h+=`<option value="${w}" ${String(w)===String(statsWeek)?'selected':''}>Week ${w+1}</option>`;});
+    h+=`</select>`;
+  }
+  h+=`</div>`;
+
+  // Fetch data
+  let rows;
+  if(statsMode==='season'){
+    rows=await api('/api/season-stats/'+statsCat);
+  } else {
+    rows=await api('/api/stats/'+statsCat+(statsWeek?'?week='+statsWeek:''));
+  }
+
+  if(!rows.length){
+    h+=`<div class="card"><div class="empty"><h4>No ${statsCat} stats yet</h4>
+      <p>Export weekly stats from the Companion App after each game.<br>
+      Go to the Companion App → your franchise → Export → select the week → check all stat categories → Export.</p></div></div>`;
+    el.innerHTML=h;return;
+  }
+
+  // Build table based on category
+  h+=`<div class="card"><div class="ch"><h3>${statsCat.charAt(0).toUpperCase()+statsCat.slice(1)} ${statsMode==='season'?'Leaders':'— Week '+(parseInt(statsWeek)+1)}</h3><span class="badge">${rows.length} players</span></div>`;
+  h+=`<div style="overflow-x:auto"><table><thead><tr>`;
+
+  if(statsCat==='passing'){
+    h+=`<th>#</th><th>Player</th><th>Team</th>`;
+    if(statsMode==='season') h+=`<th class="tc">GP</th>`;
+    h+=`<th class="tc">CMP</th><th class="tc">ATT</th><th class="tc">CMP%</th><th class="tc">YDS</th><th class="tc">TD</th><th class="tc">INT</th><th class="tc">SCK</th><th class="tc">RTG</th><th class="tc">LNG</th>`;
+    if(statsMode==='season') h+=`<th class="tc">YDS/G</th>`;
+    h+=`</tr></thead><tbody>`;
+    rows.forEach((r,i)=>{
+      const cmp=statsMode==='season'?r.comp_pct:(r.pass_att?Math.round(r.pass_comp/r.pass_att*1000)/10:0);
+      const rtg=statsMode==='season'?(r.passer_rating||'—'):((r.passer_rating||0).toFixed(1));
+      h+=`<tr><td class="mono" style="color:var(--txd)">${i+1}</td><td style="color:var(--txb);font-weight:500">${r.full_name}</td><td>${tc(r.team_abbr)}</td>`;
+      if(statsMode==='season') h+=`<td class="tc mono">${r.games}</td>`;
+      h+=`<td class="tc mono">${r.pass_comp}</td><td class="tc mono">${r.pass_att}</td>
+        <td class="tc mono" style="color:var(--accent2)">${cmp}%</td>
+        <td class="tc mono" style="color:var(--txb);font-weight:600">${r.pass_yds}</td>
+        <td class="tc mono" style="color:var(--grn)">${r.pass_tds}</td>
+        <td class="tc mono" style="color:var(--red)">${r.pass_ints}</td>
+        <td class="tc mono">${r.sacks_taken}</td>
+        <td class="tc mono">${rtg}</td>
+        <td class="tc mono">${r.longest_pass||'—'}</td>`;
+      if(statsMode==='season') h+=`<td class="tc mono">${r.yds_per_game}</td>`;
+      h+=`</tr>`;
+    });
+  } else if(statsCat==='rushing'){
+    h+=`<th>#</th><th>Player</th><th>Team</th>`;
+    if(statsMode==='season') h+=`<th class="tc">GP</th>`;
+    h+=`<th class="tc">ATT</th><th class="tc">YDS</th><th class="tc">YPC</th><th class="tc">TD</th><th class="tc">FUM</th><th class="tc">LNG</th><th class="tc">BT</th><th class="tc">20+</th>`;
+    if(statsMode==='season') h+=`<th class="tc">YDS/G</th>`;
+    h+=`</tr></thead><tbody>`;
+    rows.forEach((r,i)=>{
+      const ypc=statsMode==='season'?r.ypc:(r.rush_att?Math.round(r.rush_yds/r.rush_att*10)/10:0);
+      h+=`<tr><td class="mono" style="color:var(--txd)">${i+1}</td><td style="color:var(--txb);font-weight:500">${r.full_name}</td><td>${tc(r.team_abbr)}</td>`;
+      if(statsMode==='season') h+=`<td class="tc mono">${r.games}</td>`;
+      h+=`<td class="tc mono">${r.rush_att}</td>
+        <td class="tc mono" style="color:var(--txb);font-weight:600">${r.rush_yds}</td>
+        <td class="tc mono" style="color:var(--accent2)">${ypc}</td>
+        <td class="tc mono" style="color:var(--grn)">${r.rush_tds}</td>
+        <td class="tc mono" style="color:var(--red)">${r.rush_fumbles}</td>
+        <td class="tc mono">${r.rush_longest}</td>
+        <td class="tc mono">${r.rush_broken_tackles||0}</td>
+        <td class="tc mono">${r.rush_20plus||0}</td>`;
+      if(statsMode==='season') h+=`<td class="tc mono">${r.yds_per_game}</td>`;
+      h+=`</tr>`;
+    });
+  } else if(statsCat==='receiving'){
+    h+=`<th>#</th><th>Player</th><th>Team</th>`;
+    if(statsMode==='season') h+=`<th class="tc">GP</th>`;
+    h+=`<th class="tc">REC</th><th class="tc">TGT</th><th class="tc">YDS</th><th class="tc">Y/R</th><th class="tc">TD</th><th class="tc">DRP</th><th class="tc">CT%</th><th class="tc">LNG</th>`;
+    if(statsMode==='season') h+=`<th class="tc">YDS/G</th>`;
+    h+=`</tr></thead><tbody>`;
+    rows.forEach((r,i)=>{
+      const yr=statsMode==='season'?r.ypc:(r.rec_catches?Math.round(r.rec_yds/r.rec_catches*10)/10:0);
+      const cpct=statsMode==='season'?r.catch_pct:(r.rec_catch_pct||0);
+      h+=`<tr><td class="mono" style="color:var(--txd)">${i+1}</td><td style="color:var(--txb);font-weight:500">${r.full_name}</td><td>${tc(r.team_abbr)}</td>`;
+      if(statsMode==='season') h+=`<td class="tc mono">${r.games}</td>`;
+      h+=`<td class="tc mono" style="color:var(--txb);font-weight:600">${r.rec_catches}</td>
+        <td class="tc mono">${r.rec_targets||'—'}</td>
+        <td class="tc mono" style="color:var(--txb);font-weight:600">${r.rec_yds}</td>
+        <td class="tc mono" style="color:var(--accent2)">${yr}</td>
+        <td class="tc mono" style="color:var(--grn)">${r.rec_tds}</td>
+        <td class="tc mono" style="color:var(--red)">${r.rec_drops}</td>
+        <td class="tc mono">${cpct}%</td>
+        <td class="tc mono">${r.rec_longest}</td>`;
+      if(statsMode==='season') h+=`<td class="tc mono">${r.yds_per_game}</td>`;
+      h+=`</tr>`;
+    });
+  } else if(statsCat==='defense'){
+    h+=`<th>#</th><th>Player</th><th>Team</th>`;
+    if(statsMode==='season') h+=`<th class="tc">GP</th>`;
+    h+=`<th class="tc">TKL</th><th class="tc">SCK</th><th class="tc">INT</th><th class="tc">FF</th><th class="tc">FR</th><th class="tc">TD</th><th class="tc">PD</th>`;
+    if(statsMode==='season') h+=`<th class="tc">TKL/G</th>`;
+    h+=`</tr></thead><tbody>`;
+    rows.forEach((r,i)=>{
+      h+=`<tr><td class="mono" style="color:var(--txd)">${i+1}</td><td style="color:var(--txb);font-weight:500">${r.full_name}</td><td>${tc(r.team_abbr)}</td>`;
+      if(statsMode==='season') h+=`<td class="tc mono">${r.games}</td>`;
+      h+=`<td class="tc mono" style="color:var(--txb);font-weight:600">${r.def_tackles}</td>
+        <td class="tc mono" style="color:var(--accent2)">${r.def_sacks}</td>
+        <td class="tc mono" style="color:var(--grn)">${r.def_ints}</td>
+        <td class="tc mono">${r.def_forced_fumbles}</td>
+        <td class="tc mono">${r.def_fumble_rec}</td>
+        <td class="tc mono" style="color:var(--grn)">${r.def_tds}</td>
+        <td class="tc mono">${r.def_passes_deflected}</td>`;
+      if(statsMode==='season') h+=`<td class="tc mono">${r.tackles_per_game}</td>`;
+      h+=`</tr>`;
+    });
+  } else if(statsCat==='kicking'){
+    h+=`<th>#</th><th>Player</th><th>Team</th>`;
+    if(statsMode==='season') h+=`<th class="tc">GP</th>`;
+    h+=`<th class="tc">FGM</th><th class="tc">FGA</th><th class="tc">FG%</th><th class="tc">LNG</th><th class="tc">XPM</th><th class="tc">XPA</th>`;
+    if(statsMode==='season') h+=`<th class="tc">PTS</th>`;
+    h+=`</tr></thead><tbody>`;
+    rows.forEach((r,i)=>{
+      const fgpct=statsMode==='season'?r.fg_pct:(r.fg_att?Math.round(r.fg_made/r.fg_att*1000)/10:0);
+      const pts=statsMode==='season'?r.total_pts:((r.fg_made||0)*3+(r.xp_made||0));
+      h+=`<tr><td class="mono" style="color:var(--txd)">${i+1}</td><td style="color:var(--txb);font-weight:500">${r.full_name}</td><td>${tc(r.team_abbr)}</td>`;
+      if(statsMode==='season') h+=`<td class="tc mono">${r.games}</td>`;
+      h+=`<td class="tc mono" style="color:var(--grn)">${r.fg_made}</td>
+        <td class="tc mono">${r.fg_att}</td>
+        <td class="tc mono" style="color:var(--accent2)">${fgpct}%</td>
+        <td class="tc mono">${r.fg_longest}</td>
+        <td class="tc mono">${r.xp_made}</td>
+        <td class="tc mono">${r.xp_att}</td>`;
+      if(statsMode==='season') h+=`<td class="tc mono" style="color:var(--txb);font-weight:600">${pts}</td>`;
+      h+=`</tr>`;
+    });
+  }
+
+  h+=`</tbody></table></div></div>`;
+  el.innerHTML=h;
+}
+
+// === PLAYOFF BRACKET ===
+async function loadBracket(){
+  const el=document.getElementById('t-bracket');
+  const data=await api('/api/bracket');
+  const standings=data.standings||[];
+  const games=data.games||[];
+
+  if(!standings.length && !games.length){
+    el.innerHTML=`<div class="card"><div class="empty"><h4>No bracket data</h4><p>Export league info from the Companion App to see playoff seedings</p></div></div>`;
+    return;
+  }
+
+  let h=`<div class="sb"><h2>Playoff Picture</h2></div>`;
+
+  // Playoff games (if any)
+  if(games.length){
+    const rounds={};
+    games.forEach(g=>{
+      const r=g.round||1;
+      if(!rounds[r])rounds[r]=[];
+      rounds[r].push(g);
+    });
+    const roundNames={1:'Wild Card',2:'Divisional',3:'Conference Championship',4:'Super Bowl'};
+    Object.keys(rounds).sort((a,b)=>a-b).forEach(r=>{
+      h+=`<div class="card"><div class="ch"><h3>${roundNames[r]||'Round '+r}</h3><span class="badge">${rounds[r].length} games</span></div>`;
+      h+=`<div class="sg">`;
+      rounds[r].forEach(g=>{
+        const done=g.is_complete;
+        const hw=done&&g.home_score>g.away_score;
+        const aw=done&&g.away_score>g.home_score;
+        h+=`<div class="gc">`;
+        if(done)h+=`<div class="ft">Final</div>`;
+        h+=`<div class="mu">
+          <div class="ts"><div class="dot" style="background:${ti(g.away_team).cl}"></div>
+            <span class="ab">${g.away_team}</span><span class="tn">${ti(g.away_team).n}</span></div>
+          <div class="sc"><span class="sv ${aw?'sw':'sl'}">${done?g.away_score:'—'}</span>
+            <span class="sd">@</span>
+            <span class="sv ${hw?'sw':'sl'}">${done?g.home_score:'—'}</span></div>
+          <div class="ts" style="justify-content:flex-end"><span class="tn">${ti(g.home_team).n}</span>
+            <span class="ab">${g.home_team}</span><div class="dot" style="background:${ti(g.home_team).cl}"></div></div>
+        </div></div>`;
+      });
+      h+=`</div></div>`;
+    });
+  }
+
+  // Seedings by conference
+  const afcTeams=[];const nfcTeams=[];
+  const afcDivs=["AFC East","AFC North","AFC South","AFC West"];
+  const nfcDivs=["NFC East","NFC North","NFC South","NFC West"];
+  standings.forEach(s=>{
+    const abbr=s.team_abbr;
+    const isAfc=afcDivs.some(d=>(DIVS[d]||[]).includes(abbr));
+    if(isAfc)afcTeams.push(s);else nfcTeams.push(s);
+  });
+
+  function seedCard(conf,teams){
+    const sorted=[...teams].sort((a,b)=>(a.seed||99)-(b.seed||99)||(b.wins-a.wins));
+    let c=`<div class="card"><div class="ch"><h3>${conf}</h3><span class="badge">${sorted.length} teams</span></div>`;
+    sorted.forEach((t,i)=>{
+      const seed=t.seed||i+1;
+      const cls=seed<=1?'bk-in':seed<=7?'bk-in':'bk-out';
+      const tag=seed<=4?'bk-divwinner':'bk-wild';
+      const rec=`${t.wins||0}-${t.losses||0}${t.ties?' -'+t.ties:''}`;
+      c+=`<div class="bk-seed">
+        <span class="bk-num ${cls}">${seed}</span>
+        <div class="dot" style="background:${ti(t.team_abbr).cl}"></div>
+        <span class="ta">${t.team_abbr}</span>
+        <span class="tn">${ti(t.team_abbr).n}</span>
+        ${seed<=7?'<span class="bk-div '+tag+'">'+(seed<=4?'DIV':'WC')+'</span>':''}
+        <span class="bk-rec">${rec}</span>
+      </div>`;
+    });
+    c+=`</div>`;
+    return c;
+  }
+
+  h+=`<div class="bracket-grid">${seedCard('AFC',afcTeams)}${seedCard('NFC',nfcTeams)}</div>`;
+  el.innerHTML=h;
+}
+
 // === SETUP ===
 function loadSetup(){
   const el=document.getElementById('t-setup');

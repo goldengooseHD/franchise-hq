@@ -33,7 +33,7 @@ const SCHEMA_VERSION = 2;
         'standings','rosters',
         'weekly_passing','weekly_rushing','weekly_receiving',
         'weekly_defense','weekly_kicking','weekly_punting',
-        'team_stats','export_log','team_map','schedules','league_info'
+        'team_stats','export_log','team_map','schedules','league_info','playoff_games'
       ];
       for (const t of DATA_TABLES) db.exec(`DROP TABLE IF EXISTS ${t}`);
       db.exec(`DELETE FROM schema_version`);
@@ -265,6 +265,19 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS schedules (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     week INTEGER,
+    home_team TEXT,
+    away_team TEXT,
+    home_score INTEGER DEFAULT 0,
+    away_score INTEGER DEFAULT 0,
+    is_complete INTEGER DEFAULT 0,
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS playoff_games (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    round INTEGER,
+    conf TEXT,
+    game_num INTEGER,
     home_team TEXT,
     away_team TEXT,
     home_score INTEGER DEFAULT 0,
@@ -618,6 +631,30 @@ app.post('*', (req, res) => {
       processed = true;
     }
 
+    // --- PLAYOFF SCHEDULE ---
+    const playoffList = body.playoffScheduleInfoList || body.playoffBracketInfoList || body.postSeasonScheduleInfoList;
+    if (playoffList && Array.isArray(playoffList)) {
+      const ins = db.prepare(`INSERT INTO playoff_games (round, conf, game_num, home_team, away_team, home_score, away_score, is_complete) VALUES (?,?,?,?,?,?,?,?)`);
+      const clear = db.prepare('DELETE FROM playoff_games');
+      const tx = db.transaction(() => {
+        clear.run();
+        playoffList.forEach((g, i) => {
+          ins.run(
+            val(g,'round') || val(g,'roundNum') || 1,
+            val(g,'conf') || val(g,'conference') || '',
+            val(g,'gameNum') || i,
+            resolveTeam(g.homeTeamId || g.homeTeam),
+            resolveTeam(g.awayTeamId || g.awayTeam),
+            val(g,'homeScore'), val(g,'awayScore'),
+            g.isGameOver || g.isComplete || g.isGameComplete ? 1 : 0
+          );
+        });
+      });
+      tx();
+      logExport('playoffSchedule', playoffList.length, keys);
+      processed = true;
+    }
+
     if (!processed) {
       // Store raw data for any unrecognized format
       db.prepare('INSERT INTO league_info (data, export_type) VALUES (?, ?)').run(JSON.stringify(body), 'unknown');
@@ -821,6 +858,92 @@ app.get('/api/weeks', (req, res) => {
     } catch(e) {}
   });
   res.json([...weeks].sort((a,b) => a-b));
+});
+
+// GET bracket (standings seedings + any playoff games)
+app.get('/api/bracket', (req, res) => {
+  const standings = db.prepare('SELECT * FROM standings ORDER BY seed ASC, wins DESC').all();
+  const games = db.prepare('SELECT * FROM playoff_games ORDER BY round ASC, game_num ASC').all();
+  res.json({ standings, games });
+});
+
+// GET season totals — aggregate weekly stats across all weeks
+app.get('/api/season-stats/:type', (req, res) => {
+  const type = req.params.type;
+  const team = req.query.team;
+  const limit = parseInt(req.query.limit) || 100;
+
+  const queries = {
+    passing: `SELECT roster_id, team_abbr, full_name,
+      COUNT(DISTINCT week) as games,
+      SUM(pass_att) as pass_att, SUM(pass_comp) as pass_comp, SUM(pass_yds) as pass_yds,
+      SUM(pass_tds) as pass_tds, SUM(pass_ints) as pass_ints, SUM(sacks_taken) as sacks_taken,
+      ROUND(CAST(SUM(pass_comp) AS REAL)/NULLIF(SUM(pass_att),0)*100, 1) as comp_pct,
+      ROUND(CAST(SUM(pass_yds) AS REAL)/NULLIF(COUNT(DISTINCT week),0), 1) as yds_per_game,
+      MAX(longest_pass) as longest_pass
+      FROM weekly_passing WHERE full_name != '' GROUP BY roster_id, team_abbr
+      ORDER BY pass_yds DESC`,
+    rushing: `SELECT roster_id, team_abbr, full_name,
+      COUNT(DISTINCT week) as games,
+      SUM(rush_att) as rush_att, SUM(rush_yds) as rush_yds, SUM(rush_tds) as rush_tds,
+      SUM(rush_fumbles) as rush_fumbles,
+      ROUND(CAST(SUM(rush_yds) AS REAL)/NULLIF(SUM(rush_att),0), 1) as ypc,
+      ROUND(CAST(SUM(rush_yds) AS REAL)/NULLIF(COUNT(DISTINCT week),0), 1) as yds_per_game,
+      MAX(rush_longest) as rush_longest, SUM(rush_broken_tackles) as rush_broken_tackles,
+      SUM(rush_20plus) as rush_20plus
+      FROM weekly_rushing WHERE full_name != '' GROUP BY roster_id, team_abbr
+      ORDER BY rush_yds DESC`,
+    receiving: `SELECT roster_id, team_abbr, full_name,
+      COUNT(DISTINCT week) as games,
+      SUM(rec_catches) as rec_catches, SUM(rec_yds) as rec_yds, SUM(rec_tds) as rec_tds,
+      SUM(rec_drops) as rec_drops, SUM(rec_targets) as rec_targets,
+      ROUND(CAST(SUM(rec_catches) AS REAL)/NULLIF(SUM(rec_targets),0)*100, 1) as catch_pct,
+      ROUND(CAST(SUM(rec_yds) AS REAL)/NULLIF(SUM(rec_catches),0), 1) as ypc,
+      ROUND(CAST(SUM(rec_yds) AS REAL)/NULLIF(COUNT(DISTINCT week),0), 1) as yds_per_game,
+      MAX(rec_longest) as rec_longest
+      FROM weekly_receiving WHERE full_name != '' GROUP BY roster_id, team_abbr
+      ORDER BY rec_yds DESC`,
+    defense: `SELECT roster_id, team_abbr, full_name,
+      COUNT(DISTINCT week) as games,
+      SUM(def_tackles) as def_tackles, SUM(def_sacks) as def_sacks,
+      SUM(def_ints) as def_ints, SUM(def_forced_fumbles) as def_forced_fumbles,
+      SUM(def_fumble_rec) as def_fumble_rec, SUM(def_tds) as def_tds,
+      SUM(def_passes_deflected) as def_passes_deflected,
+      SUM(def_catches_allowed) as def_catches_allowed,
+      ROUND(CAST(SUM(def_tackles) AS REAL)/NULLIF(COUNT(DISTINCT week),0), 1) as tackles_per_game
+      FROM weekly_defense WHERE full_name != '' GROUP BY roster_id, team_abbr
+      ORDER BY def_tackles DESC`,
+    kicking: `SELECT roster_id, team_abbr, full_name,
+      COUNT(DISTINCT week) as games,
+      SUM(fg_att) as fg_att, SUM(fg_made) as fg_made,
+      ROUND(CAST(SUM(fg_made) AS REAL)/NULLIF(SUM(fg_att),0)*100, 1) as fg_pct,
+      MAX(fg_longest) as fg_longest,
+      SUM(xp_att) as xp_att, SUM(xp_made) as xp_made,
+      SUM(fg_made)*3 + SUM(xp_made) as total_pts
+      FROM weekly_kicking WHERE full_name != '' GROUP BY roster_id, team_abbr
+      ORDER BY total_pts DESC`,
+    punting: `SELECT roster_id, team_abbr, full_name,
+      COUNT(DISTINCT week) as games,
+      SUM(punt_att) as punt_att, SUM(punt_yds) as punt_yds,
+      ROUND(CAST(SUM(punt_yds) AS REAL)/NULLIF(SUM(punt_att),0), 1) as avg_yds,
+      MAX(punt_longest) as punt_longest, SUM(punt_in20) as punt_in20,
+      SUM(punt_net_yds) as punt_net_yds
+      FROM weekly_punting WHERE full_name != '' GROUP BY roster_id, team_abbr
+      ORDER BY punt_yds DESC`
+  };
+
+  if (!queries[type]) return res.status(400).json({ error: 'Invalid stat type' });
+
+  let q = queries[type];
+  const params = [];
+  if (team && team !== 'ALL') {
+    q = q.replace('GROUP BY', `AND team_abbr = ? GROUP BY`);
+    params.push(team);
+  }
+  q += ` LIMIT ?`;
+  params.push(limit);
+
+  res.json(db.prepare(q).all(...params));
 });
 
 // GET schedules
